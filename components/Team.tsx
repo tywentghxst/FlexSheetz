@@ -1,311 +1,258 @@
-import React, { useState } from 'react';
-import { AppState, ShiftType, DayStatus, Employee, RotationDay } from '../types';
-import { SHIFT_DEFAULTS, DAYS_OF_WEEK } from '../constants';
-import { generateId, formatTo12h } from '../utils';
+
+import React, { useState, useMemo } from 'react';
+import { AppState, ShiftType } from '../types';
+import { COLORS } from '../constants';
+import { formatTo12h } from '../utils';
 
 interface TeamProps {
   state: AppState;
-  updateState: (updater: (prev: AppState) => AppState) => void;
+  subscribedIds: string[];
+  toggleSubscription: (id: string) => void;
 }
 
-const Team: React.FC<TeamProps> = ({ state, updateState }) => {
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [activeRotationWeek, setActiveRotationWeek] = useState<'week1' | 'week2'>('week1');
+type SortOption = 'shift' | 'name' | 'store';
+type ShiftFilter = 'ALL' | ShiftType;
 
-  const createUnscheduledRotation = (shift: ShiftType) => ({
-    week1: Array.from({ length: 7 }).reduce((acc, _, i) => {
-      acc[i] = { 
-        status: DayStatus.UNSCHEDULED, 
-        startTime: SHIFT_DEFAULTS[shift].start, 
-        endTime: SHIFT_DEFAULTS[shift].end 
-      };
-      return acc;
-    }, {} as Record<string, RotationDay>),
-    week2: Array.from({ length: 7 }).reduce((acc, _, i) => {
-      acc[i] = { 
-        status: DayStatus.UNSCHEDULED, 
-        startTime: SHIFT_DEFAULTS[shift].start, 
-        endTime: SHIFT_DEFAULTS[shift].end 
-      };
-      return acc;
-    }, {} as Record<string, RotationDay>)
-  });
+const Team: React.FC<TeamProps> = ({ state, subscribedIds, toggleSubscription }) => {
+  const [sortBy, setSortBy] = useState<SortOption>('shift');
+  const [shiftFilter, setShiftFilter] = useState<ShiftFilter>('ALL');
+  const [showNotificationMenu, setShowNotificationMenu] = useState(false);
 
-  const [formData, setFormData] = useState<Partial<Employee>>({
-    name: '',
-    shift: ShiftType.FIRST,
-    homeStoreId: state.stores[0]?.id || '',
-    allowedStores: state.stores.map(s => s.id),
-    driveTimeStores: [],
-    rotation: createUnscheduledRotation(ShiftType.FIRST)
-  });
-
-  const handleSave = () => {
-    if (!formData.name) return alert('Name required');
+  const filteredAndSortedEmployees = useMemo(() => {
+    let filtered = [...state.employees];
     
-    updateState(prev => {
-      const newEmployee: Employee = {
-        ...(formData as Employee),
-        allowedStores: prev.stores.map(s => s.id), 
-        id: editingId || generateId(),
-      };
-      
-      const employees = editingId 
-        ? prev.employees.map(e => e.id === editingId ? newEmployee : e)
-        : [...prev.employees, newEmployee];
+    if (shiftFilter !== 'ALL') {
+      filtered = filtered.filter(emp => emp.shift === shiftFilter);
+    }
 
-      return { ...prev, employees };
+    return filtered.sort((a, b) => {
+      if (sortBy === 'shift') {
+        return a.shift.localeCompare(b.shift);
+      }
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === 'store') {
+        const storeA = state.stores.find(s => s.id === a.homeStoreId)?.number || '';
+        const storeB = state.stores.find(s => s.id === b.homeStoreId)?.number || '';
+        return storeA.localeCompare(storeB, undefined, { numeric: true });
+      }
+      return 0;
     });
+  }, [state.employees, state.stores, sortBy, shiftFilter]);
 
-    setIsAdding(false);
-    setEditingId(null);
-  };
-
-  const handleEdit = (emp: Employee) => {
-    setFormData(emp);
-    setEditingId(emp.id);
-    setIsAdding(true);
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm('Delete this employee?')) {
-      updateState(prev => ({
-        ...prev,
-        employees: prev.employees.filter(e => e.id !== id)
-      }));
+  const getShiftTheme = (shift: ShiftType) => {
+    switch (shift) {
+      case ShiftType.FIRST: return { color: 'emerald', hex: COLORS.emerald };
+      case ShiftType.SECOND: return { color: 'blue', hex: COLORS.blue };
+      case ShiftType.THIRD: return { color: 'purple', hex: COLORS.purple };
+      default: return { color: 'zinc', hex: '#71717a' };
     }
   };
 
-  if (isAdding) {
-    return (
-      <div className="p-4 max-w-2xl mx-auto pb-32 text-white">
-        <header className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-black uppercase tracking-tighter">{editingId ? 'Edit Profile' : 'New Supervisor'}</h2>
-          <button onClick={() => setIsAdding(false)} className="text-xs font-black opacity-50 hover:opacity-100 uppercase tracking-widest">CANCEL</button>
-        </header>
-
-        <div className="space-y-6">
-          <section className="bg-zinc-900 p-6 rounded-3xl border border-white/5 shadow-xl">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-4">Core Profile</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-widest">Full Name</label>
-                <input 
-                  className="w-full bg-zinc-800 rounded-xl p-4 border-none focus:ring-2 focus:ring-red-500 text-white font-bold" 
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Employee Name"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-widest">Shift</label>
-                  <select 
-                    className="w-full bg-zinc-800 rounded-xl p-4 border-none focus:ring-2 focus:ring-red-500 text-white font-bold"
-                    value={formData.shift}
-                    onChange={e => {
-                      const shift = e.target.value as ShiftType;
-                      setFormData({ ...formData, shift, rotation: createUnscheduledRotation(shift) });
-                    }}
-                  >
-                    {Object.values(ShiftType).map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-widest">Home Store</label>
-                  <select 
-                    className="w-full bg-zinc-800 rounded-xl p-4 border-none focus:ring-2 focus:ring-red-500 text-white font-bold"
-                    value={formData.homeStoreId}
-                    onChange={e => setFormData({ ...formData, homeStoreId: e.target.value })}
-                  >
-                    {state.stores.map(s => <option key={s.id} value={s.id}>#{s.number}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="bg-zinc-900 p-6 rounded-3xl border border-white/5 shadow-xl">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-4">Drive Time Authorization</h3>
-            <p className="text-[10px] text-zinc-500 mb-4 uppercase font-bold leading-tight">Toggle stores where this supervisor earns drive-time pay.</p>
-            <div className="grid grid-cols-3 gap-2">
-              {state.stores.map(s => {
-                const isDT = formData.driveTimeStores?.includes(s.id);
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => {
-                      const current = formData.driveTimeStores || [];
-                      const next = current.includes(s.id) ? current.filter(id => id !== s.id) : [...current, s.id];
-                      setFormData({ ...formData, driveTimeStores: next });
-                    }}
-                    className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
-                      isDT ? 'border-red-500 bg-red-500/10' : 'border-white/5 bg-zinc-800 opacity-60'
-                    }`}
-                  >
-                    <span className="text-xs font-black">#{s.number}</span>
-                    <span className="text-[8px] font-bold mt-1 opacity-60">{isDT ? 'ELIGIBLE' : 'NONE'}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="bg-zinc-900 p-6 rounded-3xl border border-white/5 shadow-xl">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-red-500">Default Rotation</h3>
-              <div className="flex gap-2 bg-black p-1 rounded-lg">
-                {(['week1', 'week2'] as const).map(w => (
-                  <button
-                    key={w}
-                    onClick={() => setActiveRotationWeek(w)}
-                    className={`px-3 py-1 text-[10px] font-black rounded ${activeRotationWeek === w ? 'bg-red-600 text-white' : 'text-zinc-500'}`}
-                  >
-                    {w.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {DAYS_OF_WEEK.map((day, idx) => {
-                const rot = formData.rotation?.[activeRotationWeek][idx];
-                const showTimes = rot?.status === DayStatus.WORK || rot?.status === DayStatus.UNSCHEDULED;
-                return (
-                  <div key={day} className="flex flex-col gap-3 bg-zinc-800/40 p-4 rounded-2xl border border-white/5">
-                    <div className="flex items-center justify-between">
-                      <div className="w-12 font-black text-sm text-zinc-500 uppercase tracking-tighter">{day}</div>
-                      <select 
-                        className="bg-zinc-800 border-none rounded-lg text-xs p-2 font-bold focus:ring-red-500 text-white min-w-[160px]"
-                        value={rot?.status}
-                        onChange={e => {
-                          const nextRot = { ...formData.rotation! };
-                          nextRot[activeRotationWeek][idx].status = e.target.value as DayStatus;
-                          setFormData({ ...formData, rotation: nextRot });
-                        }}
-                      >
-                        {Object.values(DayStatus).map(st => <option key={st} value={st}>{st}</option>)}
-                      </select>
-                    </div>
-                    
-                    {showTimes && (
-                      <div className="grid grid-cols-2 gap-3 mt-1">
-                        <div>
-                          <label className="block text-[8px] font-black text-zinc-500 uppercase mb-1 tracking-widest flex justify-between">
-                            START <span>{formatTo12h(rot.startTime)}</span>
-                          </label>
-                          <input 
-                            type="time" 
-                            className="bg-black/40 border-none rounded-lg text-xs p-3 w-full font-bold text-white focus:ring-1 focus:ring-red-500"
-                            value={rot.startTime}
-                            onChange={e => {
-                               const nextRot = { ...formData.rotation! };
-                               nextRot[activeRotationWeek][idx].startTime = e.target.value;
-                               const [h, m] = e.target.value.split(':').map(Number);
-                               let totalMins = h * 60 + m + 630;
-                               const eh = Math.floor(totalMins / 60) % 24;
-                               const em = totalMins % 60;
-                               nextRot[activeRotationWeek][idx].endTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
-                               setFormData({ ...formData, rotation: nextRot });
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[8px] font-black text-zinc-500 uppercase mb-1 tracking-widest flex justify-between">
-                            END <span>{formatTo12h(rot.endTime)}</span>
-                          </label>
-                          <input 
-                            type="time" 
-                            disabled
-                            className="bg-black/20 border-none rounded-lg text-xs p-3 w-full font-bold opacity-40 text-white cursor-not-allowed"
-                            value={rot.endTime}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <button 
-            onClick={handleSave}
-            className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-5 rounded-3xl shadow-xl transition-all active:scale-95 text-xs tracking-[4px] uppercase"
-          >
-            {editingId ? 'UPDATE PROFILE' : 'COMMIT TO ROSTER'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-4 pb-32">
-      <header className="flex justify-between items-center mb-8">
-        <div>
-          <h2 className="text-3xl font-black">Roster</h2>
-          <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">{state.employees.length} TOTAL STAFF</p>
+    <div className="p-4 pb-32 max-w-5xl mx-auto">
+      <header className="mb-6 flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic text-white leading-none">
+              DISTRICT <span style={{ color: COLORS.sheetzRed }}>ROSTER</span>
+            </h2>
+            <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-2 bg-white/5 inline-block px-2 py-0.5 rounded-full border border-white/5">
+              District {state.district} • {filteredAndSortedEmployees.length} Supervisors
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Notification Control */}
+            <button 
+              onClick={() => setShowNotificationMenu(true)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                subscribedIds.length > 0 
+                  ? 'bg-red-600/10 border-red-600/50 text-red-500 shadow-[0_0_15px_rgba(218,41,28,0.2)]' 
+                  : 'bg-zinc-900 border-white/10 text-zinc-500 hover:text-white'
+              }`}
+            >
+              <span className={subscribedIds.length > 0 ? 'animate-bounce' : ''}>🔔</span>
+              ALERTS {subscribedIds.length > 0 && `(${subscribedIds.length})`}
+            </button>
+
+            {/* Sort Controls */}
+            <div className="flex bg-zinc-900/80 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-2xl">
+              {(['shift', 'name', 'store'] as const).map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setSortBy(option)}
+                  className={`px-3 md:px-5 py-2 rounded-lg text-[8px] md:text-[9px] font-black uppercase tracking-widest transition-all ${
+                    sortBy === option
+                      ? 'bg-red-600 text-white shadow-lg'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <button 
-          onClick={() => {
-            setEditingId(null);
-            setFormData({
-              name: '',
-              shift: ShiftType.FIRST,
-              homeStoreId: state.stores[0]?.id || '',
-              allowedStores: state.stores.map(s => s.id),
-              driveTimeStores: [],
-              rotation: createUnscheduledRotation(ShiftType.FIRST)
-            });
-            setIsAdding(true);
-          }}
-          className="bg-red-600 w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg transition-transform active:scale-90"
-        >
-          +
-        </button>
+
+        {/* Shift Filter Bar */}
+        <div className="flex gap-1.5 overflow-x-auto pb-2 no-scrollbar">
+          {(['ALL', ShiftType.FIRST, ShiftType.SECOND, ShiftType.THIRD] as ShiftFilter[]).map(filter => {
+            const isActive = shiftFilter === filter;
+            
+            return (
+              <button
+                key={filter}
+                onClick={() => setShiftFilter(filter)}
+                className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${
+                  isActive 
+                    ? `bg-zinc-800 border-white/20 text-white` 
+                    : 'bg-zinc-900/50 border-white/5 text-zinc-500 hover:border-white/10'
+                }`}
+              >
+                {filter === 'ALL' ? 'All' : filter.split(' ')[0]}
+              </button>
+            );
+          })}
+        </div>
       </header>
 
-      <div className="grid gap-4">
-        {state.employees
-          .sort((a, b) => a.shift.localeCompare(b.shift))
-          .map(emp => (
-          <div key={emp.id} className="bg-zinc-900 border border-white/5 rounded-3xl p-6 relative overflow-hidden group shadow-lg">
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-red-600" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+        {filteredAndSortedEmployees.length === 0 ? (
+          <div className="col-span-full py-24 bg-zinc-900/20 rounded-[2rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center text-center">
+            <span className="text-6xl mb-4 opacity-20">👥</span>
+            <h3 className="text-lg font-black text-white/40 uppercase tracking-widest">No Matches</h3>
+            <p className="text-[10px] text-zinc-600 font-bold mt-1 uppercase tracking-widest italic">Check filters</p>
+          </div>
+        ) : (
+          filteredAndSortedEmployees.map((emp) => {
+            const homeStore = state.stores.find(s => s.id === emp.homeStoreId);
+            const week1Rot = emp.rotation.week1;
+            const theme = getShiftTheme(emp.shift);
+            const isSubscribed = subscribedIds.includes(emp.id);
             
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-black">{emp.name}</h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] font-black bg-zinc-800 px-2 py-0.5 rounded text-zinc-400">{emp.shift}</span>
-                  <span className="text-[10px] font-black text-red-500">HOME STORE #{state.stores.find(s => s.id === emp.homeStoreId)?.number}</span>
+            return (
+              <div key={emp.id} className="relative bg-zinc-950 border border-white/10 rounded-[2rem] p-5 md:p-6 overflow-hidden group hover:border-red-600/40 transition-all shadow-2xl">
+                {/* Visual Accent Sidebar */}
+                <div className="absolute top-0 left-0 w-1.5 h-full opacity-80" style={{ backgroundColor: theme.hex }} />
+
+                <div className="relative z-10 pl-3">
+                  <header className="flex justify-between items-start mb-4">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border border-white/10 bg-black/40" style={{ color: theme.hex }}>
+                          {emp.shift}
+                        </span>
+                        {isSubscribed && <span className="text-[7px] font-black uppercase text-red-500 flex items-center gap-1">🔔 Subscribed</span>}
+                      </div>
+                      <h3 className="text-xl md:text-2xl font-black italic tracking-tighter text-white uppercase group-hover:text-red-500 transition-colors truncate">
+                        {emp.name}
+                      </h3>
+                    </div>
+                    <div className="bg-black/60 px-3 py-2 rounded-xl border border-white/5 text-center shrink-0 min-w-[60px]">
+                      <div className="text-[7px] font-black text-red-600 uppercase tracking-widest mb-0.5">Base</div>
+                      <div className="text-lg font-black text-white italic leading-none">#{homeStore?.number || '---'}</div>
+                    </div>
+                  </header>
+
+                  {/* Grouping Title for Times */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em] whitespace-nowrap">Routine Hours</span>
+                    <div className="h-[1px] w-full bg-white/5" />
+                  </div>
+
+                  {/* Core Details Row */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    <div className="bg-black/40 px-3 py-2.5 rounded-2xl border border-white/5">
+                      <div className="text-[7px] font-black text-zinc-500 uppercase mb-0.5 tracking-widest">START TIME</div>
+                      <div className="text-xs font-black text-white italic">
+                        {formatTo12h(week1Rot[0]?.startTime) || '---'}
+                      </div>
+                    </div>
+                    <div className="bg-black/40 px-3 py-2.5 rounded-2xl border border-white/5">
+                      <div className="text-[7px] font-black text-zinc-500 uppercase mb-0.5 tracking-widest">END TIME</div>
+                      <div className="text-xs font-black text-white italic">
+                        {formatTo12h(week1Rot[0]?.endTime) || '---'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Drive Time Section */}
+                  <div className="bg-white/[0.03] px-3 py-2.5 rounded-2xl border border-white/5">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Drive Time Stores</span>
+                      <span className="text-[7px] font-bold text-zinc-400 uppercase bg-zinc-800 px-1.5 py-0.5 rounded border border-white/5">
+                        {emp.driveTimeStores.length} Stores
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {emp.driveTimeStores.length > 0 ? (
+                        emp.driveTimeStores.map(id => (
+                          <div key={id} className="bg-zinc-900 px-2 py-1 rounded-lg border border-white/5 text-[9px] font-black text-white group-hover:border-red-600/20 transition-colors">
+                            #{state.stores.find(s => s.id === id)?.number}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-[8px] font-bold text-zinc-600 italic uppercase tracking-widest py-0.5">
+                          No stores eligible
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => handleEdit(emp)} className="p-2 bg-white/5 rounded-lg hover:bg-white/10 text-white transition-colors">✏️</button>
-                <button onClick={() => handleDelete(emp.id)} className="p-2 bg-white/5 rounded-lg hover:bg-white/10 text-white transition-colors">🗑️</button>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mt-4 border-t border-white/5 pt-4">
-              <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest w-full mb-1">Drive Time Authorized</span>
-              {emp.driveTimeStores.map(storeId => (
-                <span key={storeId} className="bg-red-950/30 text-red-500 border border-red-500/20 px-2 py-0.5 rounded text-[9px] font-black">
-                  #{state.stores.find(s => s.id === storeId)?.number}
-                </span>
-              ))}
-              {emp.driveTimeStores.length === 0 && <span className="text-[9px] font-bold text-zinc-600 italic">No drive time stores</span>}
-            </div>
-          </div>
-        ))}
-        {state.employees.length === 0 && (
-          <div className="text-center py-20 opacity-30">
-            <div className="text-5xl mb-4">👥</div>
-            <p className="text-xs font-black uppercase tracking-widest">NO STAFF ON ROSTER</p>
-          </div>
+            );
+          })
         )}
       </div>
+
+      {/* Notification Menu Overlay */}
+      {showNotificationMenu && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+           <div className="w-full max-w-lg bg-zinc-900 rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-20 duration-500 max-h-[85vh] flex flex-col">
+              <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
+                <header className="flex justify-between items-center mb-8">
+                   <div>
+                     <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white">Alert <span className="text-red-600">Setup</span></h2>
+                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Get notified when schedules change</p>
+                   </div>
+                   <button onClick={() => setShowNotificationMenu(false)} className="text-zinc-500 hover:text-white font-black text-[10px] uppercase tracking-widest">Close</button>
+                </header>
+
+                <div className="space-y-3">
+                  {state.employees.map(emp => {
+                    const isSubscribed = subscribedIds.includes(emp.id);
+                    return (
+                      <button 
+                        key={emp.id}
+                        onClick={() => toggleSubscription(emp.id)}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                          isSubscribed 
+                            ? 'bg-red-600/10 border-red-600/30 text-white' 
+                            : 'bg-zinc-800/50 border-white/5 text-zinc-500'
+                        }`}
+                      >
+                        <div className="flex flex-col items-start">
+                           <span className="text-sm font-black uppercase tracking-tight">{emp.name}</span>
+                           <span className="text-[8px] font-bold uppercase opacity-60">{emp.shift}</span>
+                        </div>
+                        <div className={`w-10 h-6 rounded-full relative transition-all ${isSubscribed ? 'bg-red-600' : 'bg-zinc-700'}`}>
+                           <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isSubscribed ? 'left-5' : 'left-1'}`} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="p-6 border-t border-white/5 bg-zinc-950/50">
+                <p className="text-[8px] text-center font-bold text-zinc-500 uppercase tracking-widest leading-relaxed">
+                  Notifications are stored locally in this browser.<br/>Ensure browser notification permissions are enabled.
+                </p>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };

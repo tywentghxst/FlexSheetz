@@ -6,13 +6,15 @@ export enum ShiftType {
 }
 
 export enum DayStatus {
-  WORK = 'SCHEDULED AT STORE #',
+  WORK = 'ASSIGNED TO STORE #',
   OFF = 'OFF',
   TRAINING = 'TRAINING',
   PTO = 'PTO',
   UNPAID = 'UNPAID',
   CALL_OFF = 'CALL OFF',
-  UNSCHEDULED = 'UNSCHEDULED'
+  UNSCHEDULED = 'UNSCHEDULED',
+  LEAVE_OF_ABSENCE = 'LEAVE OF ABSENCE',
+  BEREAVEMENT = 'BEREAVEMENT'
 }
 
 export interface Store {
@@ -57,6 +59,16 @@ export interface Announcement {
   timestamp: number;
 }
 
+export interface ChangeLog {
+  id: string;
+  timestamp: number;
+  userName: string;
+  action: string;
+  field: string;
+  oldValue: string;
+  newValue: string;
+}
+
 export interface GitHubConfig {
   repo: string; // owner/repo
   branch: string;
@@ -72,5 +84,6 @@ export interface AppState {
   employees: Employee[];
   schedule: Record<string, ScheduleEntry>;
   announcements: Announcement[];
+  logs: ChangeLog[];
   github?: GitHubConfig;
 }
