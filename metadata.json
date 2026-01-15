@@ -1,0 +1,5 @@
+{
+  "name": "FlexSheetz",
+  "description": "A comprehensive scheduling and management tool for Sheetz Flex Supervisors featuring 2-week rotations, drive-time logic, and local persistence.",
+  "requestFramePermissions": []
+}
