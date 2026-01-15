@@ -7,10 +7,12 @@ import { generateId } from '../utils';
 interface SettingsProps {
   state: AppState;
   updateState: (updater: (prev: AppState) => AppState) => void;
+  onRefresh?: () => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ state, updateState }) => {
+const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh }) => {
   const [newStore, setNewStore] = useState({ number: '', address: '' });
+  const [showToken, setShowToken] = useState(false);
 
   const handleReset = () => {
     if (confirm('WIPE ALL DATA? This cannot be undone.')) {
@@ -36,14 +38,91 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState }) => {
     }));
   };
 
+  const updateGithub = (key: string, value: string) => {
+    updateState(prev => ({
+      ...prev,
+      github: {
+        ...(prev.github || { repo: '', branch: 'main', token: '', path: 'data.json' }),
+        [key]: value
+      }
+    }));
+  };
+
   return (
     <div className="p-4 max-w-2xl mx-auto pb-32">
-      <header className="mb-8">
-        <h2 className="text-3xl font-black">Settings</h2>
-        <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Configuration & Preferences</p>
+      <header className="mb-8 flex justify-between items-end">
+        <div>
+          <h2 className="text-3xl font-black">Settings</h2>
+          <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Configuration & Persistence</p>
+        </div>
+        {state.github?.token && (
+          <button 
+            onClick={onRefresh}
+            className="text-[10px] font-black text-red-500 uppercase tracking-widest bg-red-500/10 px-3 py-2 rounded-lg"
+          >
+            Refresh from Cloud
+          </button>
+        )}
       </header>
 
       <div className="space-y-6">
+        {/* GitHub Integration */}
+        <section className="bg-zinc-900 p-6 rounded-3xl border border-emerald-500/20 shadow-xl">
+           <div className="flex items-center justify-between mb-6">
+             <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-500">GitHub Real-time Sync</h3>
+             <div className="text-[8px] bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded font-black">BETA</div>
+           </div>
+           
+           <div className="space-y-4">
+              <div>
+                 <label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-widest">Repository (owner/name)</label>
+                 <input 
+                  type="text" 
+                  placeholder="e.g. jdoe/flexsheetz-data"
+                  className="w-full bg-zinc-800 rounded-xl p-4 border-none focus:ring-2 focus:ring-emerald-500 text-sm font-bold"
+                  value={state.github?.repo || ''}
+                  onChange={e => updateGithub('repo', e.target.value)}
+                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-widest">Branch</label>
+                  <input 
+                    type="text" 
+                    className="w-full bg-zinc-800 rounded-xl p-4 border-none focus:ring-2 focus:ring-emerald-500 text-sm font-bold"
+                    value={state.github?.branch || 'main'}
+                    onChange={e => updateGithub('branch', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-widest">Storage Path</label>
+                  <input 
+                    type="text" 
+                    className="w-full bg-zinc-800 rounded-xl p-4 border-none focus:ring-2 focus:ring-emerald-500 text-sm font-bold"
+                    value={state.github?.path || 'data.json'}
+                    onChange={e => updateGithub('path', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div>
+                 <label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-widest flex justify-between">
+                   Personal Access Token (Fine-grained)
+                   <button onClick={() => setShowToken(!showToken)} className="text-emerald-500 lowercase font-normal">{showToken ? 'hide' : 'show'}</button>
+                 </label>
+                 <input 
+                  type={showToken ? "text" : "password"} 
+                  placeholder="github_pat_..."
+                  className="w-full bg-zinc-800 rounded-xl p-4 border-none focus:ring-2 focus:ring-emerald-500 text-sm font-mono"
+                  value={state.github?.token || ''}
+                  onChange={e => updateGithub('token', e.target.value)}
+                 />
+                 <p className="text-[9px] text-zinc-600 mt-2 leading-tight">
+                   Requires <b>Contents: Write</b> permissions to the selected repository. This token is stored locally in your browser.
+                 </p>
+              </div>
+           </div>
+        </section>
+
         <section className="bg-zinc-900 p-6 rounded-3xl border border-white/5 shadow-xl">
            <h3 className="text-[10px] font-black uppercase tracking-widest text-red-600 mb-6">District Profile</h3>
            <div className="flex items-center gap-4">
@@ -126,7 +205,7 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState }) => {
            >
              RESET APPLICATION DATA
            </button>
-           <p className="text-center text-[9px] font-bold text-zinc-600 mt-4 uppercase tracking-[4px]">Version 1.0.4-Stable</p>
+           <p className="text-center text-[9px] font-bold text-zinc-600 mt-4 uppercase tracking-[4px]">Version 2.0.0-Cloud</p>
         </section>
       </div>
     </div>

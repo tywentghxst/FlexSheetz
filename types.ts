@@ -32,17 +32,17 @@ export interface Employee {
   name: string;
   shift: ShiftType;
   homeStoreId: string;
-  allowedStores: string[]; // store IDs
-  driveTimeStores: string[]; // store IDs where they get DT
+  allowedStores: string[]; 
+  driveTimeStores: string[]; 
   rotation: {
-    week1: Record<string, RotationDay>; // day index 0-6 (Fri-Thu)
+    week1: Record<string, RotationDay>;
     week2: Record<string, RotationDay>;
   };
 }
 
 export interface ScheduleEntry {
   employeeId: string;
-  date: string; // ISO string
+  date: string;
   storeId: string;
   status: DayStatus;
   startTime: string;
@@ -57,12 +57,20 @@ export interface Announcement {
   timestamp: number;
 }
 
+export interface GitHubConfig {
+  repo: string; // owner/repo
+  branch: string;
+  token: string;
+  path: string; // e.g., 'data.json'
+}
+
 export interface AppState {
   district: string;
   darkMode: boolean;
   driveTimeLabel: 'Drive Time' | 'DT';
   stores: Store[];
   employees: Employee[];
-  schedule: Record<string, ScheduleEntry>; // key: employeeId_date
+  schedule: Record<string, ScheduleEntry>;
   announcements: Announcement[];
+  github?: GitHubConfig;
 }

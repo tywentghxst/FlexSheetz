@@ -13,15 +13,15 @@ export const COLORS = {
 };
 
 export const INITIAL_STORES: Store[] = [
-  { id: '1', number: '645', address: '123 Sheetz Way, Altoona, PA' },
-  { id: '2', number: '736', address: '456 Fuel St, Pittsburgh, PA' },
-  { id: '3', number: '809', address: '789 Snack Ave, Harrisburg, PA' },
-  { id: '4', number: '716', address: '101 Coffee Rd, York, PA' },
-  { id: '5', number: '866', address: '202 MTO Blvd, State College, PA' },
-  { id: '6', number: '863', address: '303 Soda Ln, Erie, PA' },
-  { id: '7', number: '804', address: '404 Burger Dr, Scranton, PA' },
-  { id: '8', number: '836', address: '505 Fry Cir, Reading, PA' },
-  { id: '9', number: '798', address: '606 Hotdog Ct, Lancaster, PA' },
+  { id: '1', number: '645', address: '55 Pine State st Lillington' },
+  { id: '2', number: '736', address: '6410 Raeford rd (bunce)' },
+  { id: '3', number: '809', address: '1025 Monroe St Carthage' },
+  { id: '4', number: '716', address: '2201 NC 24-87 Cameron' },
+  { id: '5', number: '866', address: '3008 Raeford rd' },
+  { id: '6', number: '863', address: '2304 Jefferson Davis Hwy Sanford' },
+  { id: '7', number: '804', address: '310 Chicken foot rd Hope Mills' },
+  { id: '8', number: '836', address: '1695 US-1 Southern Pines' },
+  { id: '9', number: '798', address: '2409 S Horner Blvd Sanford' },
 ];
 
 export const DAYS_OF_WEEK = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'];
