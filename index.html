@@ -38,15 +38,12 @@
         #root { min-height: 100vh; background-color: black; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .sticky-column { position: sticky; left: 0; z-index: 20; }
     </style>
 </head>
 <body class="bg-black text-white antialiased">
     <div id="root"></div>
 
-    <!-- Ensure Babel processes the entry point correctly -->
-    <script type="text/babel" data-type="module">
-        import './index.tsx';
-    </script>
+    <!-- The data-type="module" tells Babel to handle imports correctly -->
+    <script type="text/babel" data-type="module" src="./index.tsx"></script>
 </body>
 </html>
