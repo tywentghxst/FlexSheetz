@@ -221,8 +221,8 @@ const App: React.FC = () => {
 
       <main className="flex-1 overflow-y-auto no-scrollbar relative z-10">
         {showNotifications && (
-          <div className="fixed inset-0 z-[200] bg-black overflow-hidden flex flex-col pt-[var(--sat)]">
-             <header className="shrink-0 bg-zinc-950 border-b border-white/10 px-6 py-8 flex justify-between items-center">
+          <div className="fixed inset-0 z-[200] bg-black overflow-hidden flex flex-col">
+             <header className="shrink-0 bg-zinc-950 border-b border-white/10 px-6 pt-[calc(var(--sat)+1.5rem)] pb-8 flex justify-between items-center">
                 <div>
                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white leading-none">Alert <span className="text-red-600">Inbox</span></h2>
                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Personnel Updates</p>
