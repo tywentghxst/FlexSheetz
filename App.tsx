@@ -71,7 +71,6 @@ const App: React.FC = () => {
       setIsStandalone(isStandaloneMode);
       
       if (isStandaloneMode) {
-        // Lock to portrait on devices that support it
         if (screen.orientation && (screen.orientation as any).lock) {
           (screen.orientation as any).lock('portrait').catch(() => {});
         }
@@ -81,12 +80,10 @@ const App: React.FC = () => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     checkIfStandalone();
     
-    // Attempt to trigger true Fullscreen API on first click if in standalone mode (Android/Chrome focus)
     const requestTrueFullscreen = () => {
       if (isStandalone && document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(() => {});
       }
-      // Remove listener after first interaction
       document.removeEventListener('click', requestTrueFullscreen);
     };
 
@@ -268,7 +265,7 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex flex-col h-full w-full overflow-hidden ${currentThemeClass} transition-colors duration-300`}>
-      <header className="shrink-0 z-[60] shadow-xl" style={{ backgroundColor: COLORS.sheetzRed }}>
+      <header className="shrink-0 z-[110] shadow-xl" style={{ backgroundColor: COLORS.sheetzRed }}>
         <div className="px-4 py-4 flex justify-between items-center">
           <div className="flex flex-col">
             <h1 className="font-black text-2xl tracking-tighter text-white uppercase italic leading-none">
@@ -335,9 +332,9 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto no-scrollbar relative">
+      <main className="flex-1 overflow-y-auto no-scrollbar relative z-10">
         {showNotifications && (
-          <div className="absolute inset-0 z-[55] bg-black/95 backdrop-blur-xl overflow-y-auto">
+          <div className="absolute inset-0 z-[120] bg-black/95 backdrop-blur-xl overflow-y-auto">
              <div className="p-8 max-w-lg mx-auto pb-32">
                 <header className="flex justify-between items-center mb-10">
                    <div>
@@ -386,7 +383,7 @@ const App: React.FC = () => {
         )}
 
         {showSettings ? (
-          <div className="absolute inset-0 z-[55] bg-inherit overflow-y-auto">
+          <div className="absolute inset-0 z-[120] bg-inherit overflow-y-auto">
              <Settings state={state} updateState={updateState} onRefresh={() => state.github && pullFromGitHub(state.github)} onLogout={handleLogout} />
              <div className="p-4 flex justify-center pb-20">
                 <button 
@@ -409,8 +406,8 @@ const App: React.FC = () => {
       </main>
 
       {!showSettings && !showNotifications && (
-        <nav className="shrink-0 z-50 bg-black/80 backdrop-blur-md border-t border-white/10 px-2 py-2">
-          <div className="flex justify-around items-center max-w-4xl mx-auto">
+        <nav className="shrink-0 z-[110] bg-black/90 backdrop-blur-xl border-t border-white/10 px-2 py-2 safe-area-bottom">
+          <div className="flex justify-around items-center max-w-4xl mx-auto mb-[env(safe-area-inset-bottom)]">
             {[
               { id: 'Schedule', icon: '📅' },
               { id: 'Locations', icon: '📍' },
@@ -422,7 +419,7 @@ const App: React.FC = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 flex flex-col items-center p-2 rounded-xl transition-all ${
-                  activeTab === tab.id ? 'bg-white/10 text-white' : 'text-zinc-500 shadow-none'
+                  activeTab === tab.id ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500'
                 }`}
               >
                 <span className="text-xl mb-1">{tab.icon}</span>
@@ -434,8 +431,8 @@ const App: React.FC = () => {
       )}
 
       {showAuthModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="w-full max-w-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 p-8 shadow-2xl text-center">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="w-full max-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 p-8 shadow-2xl text-center">
              <div className="w-16 h-16 bg-red-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-2xl text-white">🔒</div>
              <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white mb-2">Admin <span className="text-red-600">Login</span></h2>
              <form onSubmit={handleAuthSubmit} className="space-y-4">
@@ -462,7 +459,7 @@ const App: React.FC = () => {
       )}
 
       {showInstallModal && (
-        <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-xl">
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-xl">
           <div className="w-full max-w-lg bg-zinc-900 rounded-t-[3rem] sm:rounded-[3rem] border border-white/10 p-10 shadow-2xl text-center">
              <div className="w-24 h-24 bg-red-600 rounded-3xl mx-auto mb-8 flex items-center justify-center text-4xl text-white shadow-2xl shadow-red-900/40">📲</div>
              <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-4">Add to <span className="text-red-600">Home Screen</span></h2>
