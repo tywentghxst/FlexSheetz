@@ -7,20 +7,23 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FlexSheetz">
+    <meta name="theme-color" content="#DA291C">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://www.sheetz.com/favicon.ico">
     <title>FlexSheetz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior-y: contain;
+            background-color: black;
         }
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 4px;
-            width: 4px;
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #DA291C;
-            border-radius: 10px;
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
         .sticky-column {
             position: sticky;
@@ -41,5 +44,13 @@
 </head>
 <body class="bg-black text-white antialiased">
     <div id="root"></div>
+    <script type="module" src="index.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
+        });
+      }
+    </script>
 </body>
 </html>
