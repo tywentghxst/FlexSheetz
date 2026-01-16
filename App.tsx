@@ -243,7 +243,6 @@ const App: React.FC = () => {
   };
 
   const currentThemeClass = state.darkMode ? 'bg-black text-white' : 'bg-gray-50 text-gray-900';
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
 
   return (
     <div className={`min-h-screen flex flex-col ${currentThemeClass} transition-colors duration-300`}>

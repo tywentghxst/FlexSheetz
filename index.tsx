@@ -11,4 +11,6 @@ if (rootElement) {
       <App />
     </React.StrictMode>
   );
+} else {
+  console.error("Critical: Root element not found.");
 }
