@@ -92,23 +92,53 @@ const App: React.FC = () => {
     }
   };
 
+  // Improved Notification Observer
   useEffect(() => {
     if (!state.logs || state.logs.length === 0) return;
+    
     const latestLog = state.logs[state.logs.length - 1];
-    if (latestLog.id !== lastLogIdRef.current) {
-      const subscribedEmp = state.employees.find(e => e.name === latestLog.userName && subscribedIds.includes(e.id));
-      if (subscribedEmp && (latestLog.action === 'OVERRIDE' || latestLog.action === 'REVERT')) {
-        if (Notification.permission === 'granted') {
-          new Notification(`Update: ${subscribedEmp.name}`, { body: `${latestLog.field}: ${latestLog.newValue}` });
+    
+    // Guard: Prevent duplicate processing of the same log
+    if (latestLog.id === lastLogIdRef.current) return;
+    lastLogIdRef.current = latestLog.id;
+
+    // Logic: Find if the user involved in this log is someone we are subscribed to
+    const targetEmployee = state.employees?.find(e => 
+        e.name === latestLog.userName && subscribedIds.includes(e.id)
+    );
+
+    if (targetEmployee && (latestLog.action === 'OVERRIDE' || latestLog.action === 'REVERT')) {
+      const title = `Update: ${targetEmployee.name}`;
+      const body = `${latestLog.field}: ${latestLog.newValue || 'Default'}`;
+
+      // 1. Browser Notification
+      if (window.Notification && Notification.permission === 'granted') {
+        try {
+          new Notification(title, { body });
+        } catch (e) {
+          console.error("Notification error:", e);
         }
-        setLocalNotifications(prev => [{ id: latestLog.id, title: `Update: ${subscribedEmp.name}`, body: `${latestLog.field}: ${latestLog.newValue}`, timestamp: latestLog.timestamp }, ...prev]);
       }
-      lastLogIdRef.current = latestLog.id;
+
+      // 2. Local App Inbox
+      setLocalNotifications(prev => [
+        { 
+          id: latestLog.id, 
+          title, 
+          body, 
+          timestamp: latestLog.timestamp 
+        }, 
+        ...prev
+      ].slice(0, 50));
     }
   }, [state.logs, subscribedIds, state.employees]);
 
-  const toggleSubscription = (id: string) => {
-    if (Notification.permission === 'default') Notification.requestPermission();
+  const toggleSubscription = async (id: string) => {
+    // Request permissions on first interaction
+    if (window.Notification && Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+    
     setSubscribedIds(prev => {
       const next = prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id];
       localStorage.setItem(SUBSCRIPTIONS_KEY, JSON.stringify(next));
@@ -169,8 +199,20 @@ const App: React.FC = () => {
         const getData = await getRes.json();
         currentSha = getData.sha;
       }
-      const body = { message: `Update: ${new Date().toISOString()}`, content: btoa(JSON.stringify(newState, null, 2)), branch: config.branch, sha: currentSha || undefined };
-      const putRes = await fetch(`https://api.github.com/repos/${config.repo}/contents/${config.path}`, { method: 'PUT', headers: { Authorization: `token ${config.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const body = { 
+        message: `Update: ${new Date().toISOString()}`, 
+        content: btoa(JSON.stringify(newState, null, 2)), 
+        branch: config.branch, 
+        sha: currentSha || undefined 
+      };
+      const putRes = await fetch(`https://api.github.com/repos/${config.repo}/contents/${config.path}`, { 
+        method: 'PUT', 
+        headers: { 
+            Authorization: `token ${config.token}`, 
+            'Content-Type': 'application/json' 
+        }, 
+        body: JSON.stringify(body) 
+      });
       if (putRes.ok) {
         const putData = await putRes.json();
         if (putData) setLastSha(putData.content.sha);
@@ -213,7 +255,10 @@ const App: React.FC = () => {
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full mr-1 ${syncStatus === 'synced' ? 'bg-emerald-400' : syncStatus === 'syncing' ? 'bg-yellow-400 animate-pulse' : syncStatus === 'error' ? 'bg-red-400' : 'bg-white/20'}`} title={`Sync Status: ${syncStatus}`} />
             {!isStandalone && <button onClick={handleInstallClick} className="bg-white/10 text-white p-2.5 rounded-xl border border-white/20 flex items-center gap-2 hover:bg-white/20 transition-all active:scale-95 shadow-lg group relative"><span className="text-xl">📲</span></button>}
-            <button onClick={() => { setShowNotifications(!showNotifications); setShowSettings(false); }} className={`p-2.5 rounded-xl transition-all relative ${showNotifications ? 'bg-white text-red-600 shadow-inner' : 'bg-white/10 text-white hover:bg-white/20'}`} aria-label="Notifications"><span className="text-xl">🔔</span>{localNotifications.length > 0 && <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-red-600 animate-pulse" />}</button>
+            <button onClick={() => { setShowNotifications(!showNotifications); setShowSettings(false); }} className={`p-2.5 rounded-xl transition-all relative ${showNotifications ? 'bg-white text-red-600 shadow-inner' : 'bg-white/10 text-white hover:bg-white/20'}`} aria-label="Notifications">
+                <span className="text-xl">🔔</span>
+                {localNotifications.length > 0 && <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-red-600 animate-bounce" />}
+            </button>
             <button onClick={() => { setShowNotifications(false); if (isAuthenticated) setShowSettings(!showSettings); else setShowAuthModal(true); }} className={`p-2.5 rounded-xl transition-all ${showSettings ? 'bg-white text-red-600 shadow-inner' : 'bg-white/10 text-white hover:bg-white/20'}`} aria-label="Settings"><span className="text-xl">{isAuthenticated ? '⚙️' : '🔒'}</span></button>
           </div>
         </div>
