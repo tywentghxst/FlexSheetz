@@ -193,11 +193,10 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
             const isOOO = [DayStatus.OFF, DayStatus.PTO, DayStatus.CALL_OFF, DayStatus.UNPAID, DayStatus.LEAVE_OF_ABSENCE, DayStatus.BEREAVEMENT].includes(sched.status);
             const isUnscheduled = sched.status === DayStatus.UNSCHEDULED;
 
-            // List View Accessibility: Dynamic Contrast logic
-            // Brighter colors get dark text, darker colors get light text.
+            // Updated List View: Card background now matches status color
             const useDarkText = sched.status === DayStatus.WORK || isUnscheduled || sched.status === DayStatus.UNPAID || sched.status === DayStatus.TRAINING;
             const textColorClass = useDarkText ? 'text-zinc-950' : 'text-white';
-            const subTextColorClass = useDarkText ? 'text-zinc-900/70' : 'text-white/60';
+            const subTextColorClass = useDarkText ? 'text-zinc-950/60' : 'text-white/60';
 
             return (
               <div 
@@ -206,8 +205,8 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                 className={`p-6 rounded-[2.5rem] flex items-center justify-between group active:scale-[0.98] transition-all relative overflow-hidden shadow-2xl border border-white/5 ${isAuthenticated ? 'cursor-pointer hover:border-white/20' : 'cursor-default'}`}
                 style={{ backgroundColor: bgColor }}
               >
-                {/* Visual Depth Decoration */}
-                <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-gradient-to-br from-white to-transparent pointer-events-none" />
+                {/* Subtle depth overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
 
                 <div className="flex-1 pl-2 relative z-10">
                    <div className="flex items-center gap-2 mb-1">
@@ -227,7 +226,7 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                 <div className="text-right relative z-10">
                    <div className="flex items-center justify-end gap-2 mb-2">
                       {isDT && !isOOO && (
-                        <span className={`text-[7px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest border ${useDarkText ? 'bg-black/10 border-black/10 text-black' : 'bg-white/20 border-white/10 text-white'}`}>
+                        <span className={`text-[7px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest border ${useDarkText ? 'bg-black/10 border-black/20 text-black' : 'bg-white/20 border-white/10 text-white'}`}>
                           {state.driveTimeLabel}
                         </span>
                       )}
@@ -303,8 +302,7 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                   const isUnscheduled = sched.status === DayStatus.UNSCHEDULED;
                   const displayEndTime = isDT ? applyDriveTime(sched.endTime) : sched.endTime;
                   
-                  // Readability: Choose text color based on background lightness
-                  const mainTextColor = isOOO ? 'text-zinc-400' : 'text-zinc-950'; // Dark text on bright cards
+                  const mainTextColor = isOOO ? 'text-zinc-400' : 'text-zinc-950'; 
                   const subTextColor = isOOO ? 'text-zinc-500' : 'text-zinc-900';
                   
                   return (
@@ -386,7 +384,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
         ))}
       </div>
 
-      {/* Hero Schedule Header - Compacted View Toggle Location */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-8 border-y border-white/5 px-4 bg-zinc-950/20 rounded-[3rem] relative">
          <div className="flex items-center gap-6">
            <div className="flex flex-col">
@@ -399,7 +396,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                  <span className="text-[10px] font-black uppercase text-red-600 tracking-widest">{weekParityLabel}</span>
                </div>
                
-               {/* Compact View Toggle */}
                <div className="h-8 w-[1px] bg-white/10 mx-2 hidden md:block" />
                <div className="flex bg-zinc-950 p-1 rounded-xl border border-white/10 shadow-inner">
                  <button 
@@ -428,7 +424,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
 
       {viewMode === 'day' ? renderDayView() : renderWeekView()}
 
-      {/* Edit Overlay / Sheet */}
       {editingCell && (
         <div className="fixed inset-0 z-[100] bg-black/90 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-zinc-900 w-full max-w-lg rounded-t-[3rem] sm:rounded-[3rem] p-10 border-t sm:border border-white/10 shadow-4xl animate-in slide-in-from-bottom-20 duration-500 max-h-[95vh] overflow-y-auto">
