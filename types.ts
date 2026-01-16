@@ -79,6 +79,7 @@ export interface GitHubConfig {
 export interface AppState {
   district: string;
   darkMode: boolean;
+  defaultViewMode: 'week' | 'day';
   driveTimeLabel: 'Drive Time' | 'DT';
   stores: Store[];
   employees: Employee[];

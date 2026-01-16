@@ -256,11 +256,30 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
         </section>
         <section className="bg-zinc-900 p-6 rounded-3xl border border-white/5 shadow-xl">
           <h3 className="text-[10px] font-black uppercase tracking-widest text-red-600 mb-6">Appearance</h3>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-2xl">
               <span className="text-xs font-bold text-white">Dark Mode</span>
               <button onClick={() => updateState(prev => ({ ...prev, darkMode: !prev.darkMode }))} className={`w-12 h-6 rounded-full transition-all relative ${state.darkMode ? 'bg-red-600' : 'bg-zinc-700'}`}><div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${state.darkMode ? 'left-7' : 'left-1'}`} /></button>
             </div>
+            
+            <div className="space-y-2">
+              <span className="block text-[9px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Default View Mode</span>
+              <div className="flex bg-zinc-950 p-1 rounded-xl border border-white/5">
+                <button 
+                  onClick={() => updateState(prev => ({ ...prev, defaultViewMode: 'day' }))}
+                  className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg transition-all ${state.defaultViewMode === 'day' ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-600'}`}
+                >
+                  List
+                </button>
+                <button 
+                  onClick={() => updateState(prev => ({ ...prev, defaultViewMode: 'week' }))}
+                  className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg transition-all ${state.defaultViewMode === 'week' ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-600'}`}
+                >
+                  Grid
+                </button>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-2xl">
               <span className="text-xs font-bold text-white">DT Label</span>
               <button onClick={() => updateState(prev => ({ ...prev, driveTimeLabel: prev.driveTimeLabel === 'Drive Time' ? 'DT' : 'Drive Time' }))} className="bg-zinc-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase text-white">{state.driveTimeLabel}</button>
@@ -278,7 +297,7 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
       </section>
 
       <section className="pt-6 space-y-3">
-        <button onClick={onLogout} className="w-full bg-white/5 border border-white/10 text-white font-black py-4 rounded-2xl text-[10px] tracking-widest active:bg-zinc-800 transition-all uppercase">Logout of Admin Session</button>
+        <button onLogout={onLogout} className="w-full bg-white/5 border border-white/10 text-white font-black py-4 rounded-2xl text-[10px] tracking-widest active:bg-zinc-800 transition-all uppercase">Logout of Admin Session</button>
         <button onClick={handleReset} className="w-full bg-zinc-900 border border-red-500/20 text-red-500 font-black py-4 rounded-2xl text-[10px] tracking-widest active:bg-red-500 active:text-white transition-all uppercase">Factory Reset All Data</button>
         <p className="text-center text-[8px] font-bold text-zinc-700 mt-4 uppercase tracking-[4px]">FlexSheetz v2.3.0-Admin</p>
       </section>

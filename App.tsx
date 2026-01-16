@@ -20,6 +20,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : {
       district: '67',
       darkMode: true,
+      defaultViewMode: 'day',
       driveTimeLabel: 'Drive Time',
       stores: INITIAL_STORES,
       employees: [],
@@ -50,7 +51,6 @@ const App: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'local'>('local');
   const [lastSha, setLastSha] = useState<string | null>(null);
 
-  // Monitor logs for subscribed changes
   const lastLogIdRef = useRef<string | null>(state.logs?.[state.logs.length - 1]?.id || null);
 
   useEffect(() => {
@@ -129,6 +129,7 @@ const App: React.FC = () => {
         setDeferredPrompt(null);
       }
     } else {
+      // Fallback for iOS or browsers that don't support the prompt
       setShowInstallModal(true);
     }
   };
@@ -243,6 +244,8 @@ const App: React.FC = () => {
   };
 
   const currentThemeClass = state.darkMode ? 'bg-black text-white' : 'bg-gray-50 text-gray-900';
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
 
   return (
     <div className={`min-h-screen flex flex-col ${currentThemeClass} transition-colors duration-300`}>
@@ -460,6 +463,47 @@ const App: React.FC = () => {
                   <button type="submit" className="flex-[2] bg-red-600 text-white font-black py-4 rounded-2xl shadow-xl text-xs uppercase tracking-widest">Authenticate</button>
                 </div>
              </form>
+          </div>
+        </div>
+      )}
+
+      {/* Install Modal */}
+      {showInstallModal && (
+        <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="w-full max-w-lg bg-zinc-900 rounded-t-[3rem] sm:rounded-[3rem] border border-white/10 p-10 shadow-2xl text-center animate-in slide-in-from-bottom-20 duration-500">
+             <div className="w-24 h-24 bg-red-600 rounded-3xl mx-auto mb-8 flex items-center justify-center text-4xl text-white shadow-2xl shadow-red-900/40">
+                📲
+             </div>
+             <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-4">Add to <span className="text-red-600">Home Screen</span></h2>
+             <p className="text-sm font-medium text-zinc-400 mb-10 leading-relaxed px-4">
+                Install FlexSheetz on your device for the best experience. Access your schedule with a single tap, even when offline.
+             </p>
+             
+             <div className="space-y-6 text-left mb-10">
+                {isIOS ? (
+                  <>
+                    <div className="flex items-start gap-4 p-4 bg-zinc-800/50 rounded-2xl border border-white/5">
+                      <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center font-black text-xs shrink-0">1</div>
+                      <p className="text-xs font-bold text-zinc-200">Tap the <span className="text-blue-500 font-black">Share</span> icon in the bottom browser bar.</p>
+                    </div>
+                    <div className="flex items-start gap-4 p-4 bg-zinc-800/50 rounded-2xl border border-white/5">
+                      <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center font-black text-xs shrink-0">2</div>
+                      <p className="text-xs font-bold text-zinc-200">Scroll down and select <span className="text-white font-black">"Add to Home Screen"</span>.</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-6 bg-zinc-800/50 rounded-2xl border border-white/5 text-center">
+                    <p className="text-xs font-bold text-zinc-400">Open your browser menu (usually three dots) and select <span className="text-white font-black">"Install App"</span> or <span className="text-white font-black">"Add to Home Screen"</span>.</p>
+                  </div>
+                )}
+             </div>
+
+             <button 
+               onClick={() => setShowInstallModal(false)}
+               className="w-full bg-red-600 text-white font-black py-5 rounded-3xl shadow-xl text-xs uppercase tracking-[0.2em] active:scale-95 transition-all"
+             >
+               Got it
+             </button>
           </div>
         </div>
       )}
