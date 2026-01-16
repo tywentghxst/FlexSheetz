@@ -340,7 +340,7 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
 
       {isEditingEmployee && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-           <div className="w-full max-w-xl bg-zinc-900 rounded-[2.5rem] border border-white/10 shadow-4xl overflow-y-auto max-h-[90vh] custom-scrollbar pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+           <div className="w-full max-w-xl bg-zinc-900 rounded-[2.5rem] border border-white/10 shadow-4xl overflow-y-auto max-h-[90vh] custom-scrollbar no-scrollbar pb-64">
               <div className="p-8">
                 <header className="flex justify-between items-center mb-8">
                    <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white">{editingEmployeeId ? 'Edit' : 'New'} <span style={{ color: COLORS.sheetzRed }}>Supervisor</span></h2>

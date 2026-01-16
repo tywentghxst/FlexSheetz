@@ -205,7 +205,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                 style={{ backgroundColor: bgColor }}
               >
                 <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-gradient-to-br from-white to-transparent pointer-events-none" />
-
                 <div className="flex-1 pl-2 relative z-10">
                    <div className="flex items-center gap-2 mb-1">
                       <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${useDarkText ? 'bg-black/10 text-black' : 'bg-white/10 text-white'}`}>
@@ -220,7 +219,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                     Base: Store #{homeStoreNum}
                    </p>
                 </div>
-
                 <div className="text-right relative z-10">
                    <div className="flex items-center justify-end gap-2 mb-2">
                       {isDT && !isOOO && (
@@ -299,10 +297,8 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                   const isOOO = [DayStatus.OFF, DayStatus.PTO, DayStatus.CALL_OFF, DayStatus.UNPAID, DayStatus.LEAVE_OF_ABSENCE, DayStatus.BEREAVEMENT].includes(sched.status);
                   const isUnscheduled = sched.status === DayStatus.UNSCHEDULED;
                   const displayEndTime = isDT ? applyDriveTime(sched.endTime) : sched.endTime;
-                  
                   const mainTextColor = isOOO ? 'text-zinc-400' : 'text-zinc-950';
                   const subTextColor = isOOO ? 'text-zinc-500' : 'text-zinc-900';
-                  
                   return (
                     <td key={i} className="p-2" onClick={() => handleEditCell(emp, date)}>
                       <div 
@@ -315,7 +311,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                         {!isOOO && !isUnscheduled && (
                           <div className="absolute -right-2 -bottom-4 opacity-[0.08] text-7xl font-black italic text-black pointer-events-none">{storeNum}</div>
                         )}
-
                         <div className="flex justify-between items-start relative z-10">
                           <span className={`uppercase font-black text-[8px] tracking-[0.1em] ${isOOO ? 'text-zinc-500' : 'text-zinc-900/60'}`}>
                             {isUnscheduled ? 'UNSCHEDULED' : (sched.status === DayStatus.WORK ? 'ASSIGNED' : sched.status)}
@@ -326,7 +321,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                             </span>
                           )}
                         </div>
-
                         <div className="relative z-10">
                           {isOOO ? (
                             <div className="text-[11px] font-black uppercase italic text-zinc-500 tracking-tight">
@@ -380,7 +374,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
           </button>
         ))}
       </div>
-
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-8 border-y border-white/5 px-4 bg-zinc-950/20 rounded-[3rem] relative">
          <div className="flex items-center gap-6">
            <div className="flex flex-col">
@@ -392,7 +385,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                <div className="bg-zinc-900 px-4 py-2 rounded-2xl border border-white/10 shadow-lg">
                  <span className="text-[10px] font-black uppercase text-red-600 tracking-widest">{weekParityLabel}</span>
                </div>
-               
                <div className="h-8 w-[1px] bg-white/10 mx-2 hidden md:block" />
                <div className="flex bg-zinc-950 p-1 rounded-xl border border-white/10 shadow-inner">
                  <button 
@@ -418,12 +410,10 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
            </div>
          </div>
       </div>
-
       {viewMode === 'day' ? renderDayView() : renderWeekView()}
-
       {editingCell && (
         <div className="fixed inset-0 z-[200] bg-black/90 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-zinc-900 w-full max-w-lg rounded-t-[3rem] sm:rounded-[3rem] p-10 border-t sm:border border-white/10 shadow-4xl animate-in slide-in-from-bottom-20 duration-500 max-h-[95vh] overflow-y-auto pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+          <div className="bg-zinc-900 w-full max-w-lg rounded-t-[3rem] sm:rounded-[3rem] p-10 border-t sm:border border-white/10 shadow-4xl animate-in slide-in-from-bottom-20 duration-500 max-h-[95vh] overflow-y-auto pb-48 no-scrollbar">
             <header className="flex justify-between items-start mb-10">
               <div>
                 <h3 className="text-3xl font-black italic tracking-tighter text-white uppercase mb-2">Shift <span className="text-red-600">Override</span></h3>
@@ -435,7 +425,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                 </svg>
               </button>
             </header>
-
             <div className="space-y-8">
               <div className="space-y-4">
                 <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Roster Status</label>
@@ -452,7 +441,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                           const current = getDaySchedule(emp, editingCell.date);
                           let storeId = current.storeId;
                           if (status === DayStatus.UNSCHEDULED) storeId = emp.homeStoreId;
-                          
                           updateState(prev => ({ 
                             ...prev, 
                             schedule: { 
@@ -470,7 +458,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                    })}
                 </div>
               </div>
-
               {!isOOOStatus && (
                 <div className="animate-in slide-in-from-top-4 duration-300 space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -493,7 +480,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                         {state.stores.map(s => <option key={s.id} value={s.id}>STORE #{s.number} {state.employees.find(e => e.id === editingCell.empId)?.driveTimeStores.includes(s.id) ? `(${state.driveTimeLabel})` : ''}</option>)}
                       </select>
                     </div>
-                    
                     <div className="space-y-4">
                        <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Start Time</label>
                        <input type="time" className="w-full bg-zinc-800 border-2 border-transparent rounded-[1.5rem] p-5 text-sm focus:border-red-600 outline-none text-white font-black transition-all" value={getDaySchedule(state.employees.find(e => e.id === editingCell.empId)!, editingCell.date).startTime} onChange={(e) => {
@@ -506,7 +492,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                         }} />
                     </div>
                   </div>
-
                   <div className="bg-zinc-800/40 p-6 rounded-[2rem] border border-white/5 flex justify-between items-center">
                     <div>
                       <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Visual Shift End</span>
@@ -528,8 +513,7 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                   </div>
                 </div>
               )}
-
-              <div className="flex gap-4 pt-10">
+              <div className="flex flex-col sm:flex-row gap-4 pt-10">
                 <button onClick={() => {
                     const dateId = formatDateId(editingCell.date);
                     const emp = state.employees.find(e => e.id === editingCell.empId)!;

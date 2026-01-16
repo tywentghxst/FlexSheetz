@@ -89,7 +89,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({ state, updateState, isAut
         )}
       </header>
 
-      <div className="flex gap-2 overflow-x-auto pb-6 mb-2 custom-scrollbar no-scrollbar">
+      <div className="flex gap-2 overflow-x-auto pb-6 mb-2 no-scrollbar">
         {(['ALL', 'URGENT', 'SAFETY', 'UPDATE', 'GENERAL'] as const).map(cat => (
           <button
             key={cat}
@@ -115,7 +115,6 @@ const Announcements: React.FC<AnnouncementsProps> = ({ state, updateState, isAut
                 className="bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group hover:bg-zinc-900/60 transition-all"
               >
                 <div className={`absolute top-0 left-0 w-2 h-full ${styles.bg}`} />
-                
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-3">
                     <span className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-tighter ${styles.bg} ${styles.text} border ${styles.border}`}>
@@ -136,7 +135,6 @@ const Announcements: React.FC<AnnouncementsProps> = ({ state, updateState, isAut
                     </button>
                   )}
                 </div>
-
                 <h3 className="text-2xl font-black italic tracking-tighter text-white mb-3 uppercase">
                   {ann.title}
                 </h3>
@@ -156,13 +154,12 @@ const Announcements: React.FC<AnnouncementsProps> = ({ state, updateState, isAut
 
       {isAdding && isAuthenticated && (
         <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
-           <div className="w-full max-w-lg bg-zinc-900 rounded-[2.5rem] border border-white/10 shadow-4xl overflow-hidden animate-in slide-in-from-bottom-20 duration-500 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+           <div className="w-full max-w-lg bg-zinc-900 rounded-[2.5rem] border border-white/10 shadow-4xl overflow-y-auto max-h-[95vh] animate-in slide-in-from-bottom-20 duration-500 no-scrollbar pb-48">
               <div className="p-8">
                 <header className="flex justify-between items-center mb-8">
                    <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white">Draft <span className="text-red-600">Post</span></h2>
                    <button onClick={() => setIsAdding(false)} className="text-zinc-500 hover:text-white font-black text-[10px] uppercase tracking-widest">Cancel</button>
                 </header>
-
                 <div className="space-y-6">
                   <div>
                     <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Category</label>
@@ -182,7 +179,6 @@ const Announcements: React.FC<AnnouncementsProps> = ({ state, updateState, isAut
                       ))}
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Subject</label>
                     <input 
@@ -193,7 +189,6 @@ const Announcements: React.FC<AnnouncementsProps> = ({ state, updateState, isAut
                       onChange={e => setNewPost({...newPost, title: e.target.value})}
                     />
                   </div>
-
                   <div>
                     <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Message Body</label>
                     <textarea 
@@ -203,7 +198,6 @@ const Announcements: React.FC<AnnouncementsProps> = ({ state, updateState, isAut
                       onChange={e => setNewPost({...newPost, body: e.target.value})}
                     />
                   </div>
-
                   <button 
                     onClick={handlePost}
                     disabled={!newPost.title || !newPost.body}
