@@ -413,7 +413,7 @@ const App: React.FC = () => {
 
       {showAuthModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="w-full max-w-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 p-8 shadow-2xl text-center">
+          <div className="w-full max-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 p-8 shadow-2xl text-center">
              <div className="w-16 h-16 bg-red-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-2xl text-white">🔒</div>
              <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white mb-2">Admin <span className="text-red-600">Login</span></h2>
              <form onSubmit={handleAuthSubmit} className="space-y-4">

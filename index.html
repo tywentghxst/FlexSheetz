@@ -43,7 +43,12 @@
 <body class="bg-black text-white antialiased">
     <div id="root"></div>
 
-    <!-- The data-type="module" tells Babel to handle imports correctly -->
-    <script type="text/babel" data-type="module" src="./index.tsx"></script>
+    <!-- 
+      Directly importing index.tsx within a script block 
+      ensures Babel handles the 'import' statements as ES modules.
+    -->
+    <script type="text/babel" data-type="module">
+        import './index.tsx';
+    </script>
 </body>
 </html>
