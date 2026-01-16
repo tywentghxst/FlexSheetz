@@ -1,5 +1,5 @@
 
-import { ShiftType, DayStatus, Store } from './types';
+import { ShiftType, DayStatus, Store } from './types.ts';
 
 export const COLORS = {
   sheetzRed: '#DA291C',

@@ -1,5 +1,6 @@
-import { format, addDays, startOfDay, differenceInCalendarWeeks, parse } from 'date-fns';
-import { ANCHOR_DATE } from './constants';
+
+import { format, addDays, startOfDay, differenceInCalendarWeeks } from 'date-fns';
+import { ANCHOR_DATE } from './constants.tsx';
 
 export const getWeekNumber = (date: Date): number => {
   const diff = differenceInCalendarWeeks(date, ANCHOR_DATE, { weekStartsOn: 5 }); // Sheetz weeks start Friday
