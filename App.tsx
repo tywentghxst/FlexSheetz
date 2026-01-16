@@ -201,7 +201,7 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex flex-col h-full w-full overflow-hidden ${currentThemeClass} transition-colors duration-300`}>
-      <header className="shrink-0 z-[110] shadow-xl" style={{ backgroundColor: COLORS.sheetzRed }}>
+      <header className="shrink-0 z-[110] shadow-xl relative" style={{ backgroundColor: COLORS.sheetzRed }}>
         <div className="px-4 py-4 flex justify-between items-center">
           <div className="flex flex-col">
             <h1 className="font-black text-2xl tracking-tighter text-white uppercase italic leading-none">FLEX<span style={{ color: COLORS.sheetzGold }}>SHEETZ</span></h1>
@@ -221,26 +221,51 @@ const App: React.FC = () => {
 
       <main className="flex-1 overflow-y-auto no-scrollbar relative z-10">
         {showNotifications && (
-          <div className="fixed inset-0 z-[150] bg-black/95 backdrop-blur-xl overflow-y-auto">
-             <div className="p-8 max-w-lg mx-auto pb-64 min-h-full">
-                <header className="flex justify-between items-center mb-10 sticky top-0 bg-black/95 py-4 z-20">
-                   <div><h2 className="text-3xl font-black italic tracking-tighter uppercase text-white">Alert <span className="text-red-600">Inbox</span></h2><p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Recent Changes</p></div>
-                   <button onClick={() => setShowNotifications(false)} className="bg-zinc-800 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all">Close</button>
-                </header>
-                <div className="space-y-4">
-                  {subscribedIds.length === 0 ? (
-                    <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-10 text-center"><div className="w-20 h-20 bg-red-600/10 rounded-3xl mx-auto mb-6 flex items-center justify-center text-4xl">🔔</div><h3 className="text-xl font-black italic uppercase tracking-tighter text-white mb-2">Enable <span className="text-red-600">Alerts</span></h3><p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.15em] mb-8 leading-relaxed">Follow supervisors for updates.</p><button onClick={() => { setActiveTab('Team'); setShowNotifications(false); }} className="w-full bg-red-600 text-white font-black py-4 rounded-2xl shadow-xl text-[10px] uppercase tracking-widest active:scale-95 transition-all">Go to Team Roster</button></div>
-                  ) : localNotifications.length > 0 ? (
-                    localNotifications.map(notif => (<div key={notif.id} className="bg-zinc-900 border border-red-500/10 p-5 rounded-3xl flex items-start gap-4 shadow-xl"><div className="w-10 h-10 bg-red-600/10 rounded-2xl flex items-center justify-center text-xl shrink-0">🔔</div><div className="flex-1 min-w-0"><div className="flex justify-between items-center mb-1"><h4 className="text-sm font-black text-white uppercase italic">{notif.title}</h4><span className="text-[8px] font-bold text-zinc-500 uppercase">{format(notif.timestamp, 'h:mm a')}</span></div><p className="text-xs text-zinc-400 font-medium">{notif.body}</p></div></div>))
-                  ) : (<div className="py-32 flex flex-col items-center justify-center text-center opacity-30"><span className="text-6xl mb-6">📭</span><p className="text-sm font-black uppercase tracking-widest">Watching {subscribedIds.length} Supervisors</p></div>)}
+          <div className="fixed inset-0 z-[150] bg-black overflow-hidden flex flex-col">
+             <header className="shrink-0 bg-zinc-950 border-b border-white/10 px-6 py-6 flex justify-between items-center">
+                <div>
+                   <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white leading-none">Alert <span className="text-red-600">Inbox</span></h2>
+                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Personnel Updates</p>
                 </div>
+                <button onClick={() => setShowNotifications(false)} className="bg-white/5 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 active:scale-95 transition-all">Close</button>
+             </header>
+             <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-48 no-scrollbar">
+                {subscribedIds.length === 0 ? (
+                  <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-10 text-center my-12">
+                     <div className="w-20 h-20 bg-red-600/10 rounded-3xl mx-auto mb-6 flex items-center justify-center text-4xl">🔔</div>
+                     <h3 className="text-xl font-black italic uppercase tracking-tighter text-white mb-2">Enable <span className="text-red-600">Alerts</span></h3>
+                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.15em] mb-8 leading-relaxed">Follow supervisors in the Team Roster to see changes here.</p>
+                     <button onClick={() => { setActiveTab('Team'); setShowNotifications(false); }} className="w-full bg-red-600 text-white font-black py-4 rounded-2xl shadow-xl text-[10px] uppercase tracking-widest active:scale-95 transition-all">Go to Team Roster</button>
+                  </div>
+                ) : localNotifications.length > 0 ? (
+                  localNotifications.map(notif => (
+                    <div key={notif.id} className="bg-zinc-900 border border-red-500/10 p-5 rounded-3xl flex items-start gap-4 shadow-xl">
+                      <div className="w-10 h-10 bg-red-600/10 rounded-2xl flex items-center justify-center text-xl shrink-0">🔔</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center mb-1">
+                          <h4 className="text-sm font-black text-white uppercase italic">{notif.title}</h4>
+                          <span className="text-[8px] font-bold text-zinc-500 uppercase">{format(notif.timestamp, 'h:mm a')}</span>
+                        </div>
+                        <p className="text-xs text-zinc-400 font-medium">{notif.body}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-32 flex flex-col items-center justify-center text-center opacity-30">
+                    <span className="text-6xl mb-6">📭</span>
+                    <p className="text-sm font-black uppercase tracking-widest">Watching {subscribedIds.length} Supervisors</p>
+                    <p className="text-[9px] font-bold mt-2 uppercase tracking-widest">No new updates found</p>
+                  </div>
+                )}
              </div>
           </div>
         )}
         {showSettings ? (
-          <div className="absolute inset-0 z-[150] bg-inherit overflow-y-auto">
+          <div className="absolute inset-0 z-[150] bg-black overflow-y-auto no-scrollbar">
              <Settings state={state} updateState={updateState} onRefresh={() => state.github && pullFromGitHub(state.github)} onLogout={handleLogout} />
-             <div className="p-4 flex justify-center pb-64"><button onClick={() => setShowSettings(false)} className="bg-zinc-900 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest border border-white/5 active:scale-95 transition-all">Close Settings</button></div>
+             <div className="p-8 flex justify-center pb-64">
+                <button onClick={() => setShowSettings(false)} className="w-full max-w-sm bg-zinc-900 text-white px-8 py-5 rounded-[2rem] font-black uppercase tracking-widest border border-white/10 active:scale-95 transition-all shadow-2xl">Return to App</button>
+             </div>
           </div>
         ) : (
           <>
@@ -254,8 +279,8 @@ const App: React.FC = () => {
       </main>
 
       {!showSettings && !showNotifications && (
-        <nav className="shrink-0 z-40 bg-black/90 backdrop-blur-xl border-t border-white/10 px-2 py-2 safe-area-bottom">
-          <div className="flex justify-around items-center max-w-4xl mx-auto mb-[env(safe-area-inset-bottom)]">
+        <nav className="shrink-0 z-40 bg-black/95 backdrop-blur-xl border-t border-white/10 px-2 py-2 pb-[env(safe-area-inset-bottom)]">
+          <div className="flex justify-around items-center max-w-4xl mx-auto py-1">
             {[
               { id: 'Schedule', icon: '📅' },
               { id: 'Locations', icon: '📍' },
@@ -263,7 +288,7 @@ const App: React.FC = () => {
               { id: 'Team', icon: '👥' },
               { id: 'History', icon: '📈', label: 'Activity' }
             ].map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 flex flex-col items-center p-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-white/10 text-white shadow-lg' : 'text-gray-500'}`}><span className="text-xl mb-1">{tab.icon}</span><span className="text-[9px] uppercase font-bold tracking-widest">{tab.label || tab.id}</span></button>
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 flex flex-col items-center p-2 rounded-xl transition-all ${activeTab === tab.id ? 'bg-white/10 text-white shadow-lg scale-105' : 'text-gray-500'}`}><span className="text-xl mb-1">{tab.icon}</span><span className="text-[9px] uppercase font-bold tracking-widest">{tab.label || tab.id}</span></button>
             ))}
           </div>
         </nav>
@@ -271,14 +296,14 @@ const App: React.FC = () => {
 
       {showAuthModal && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="w-full max-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 p-8 shadow-2xl text-center">
+          <div className="w-full max-w-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 p-10 shadow-4xl text-center">
              <div className="w-16 h-16 bg-red-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-2xl text-white">🔒</div>
              <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white mb-2">Admin <span className="text-red-600">Login</span></h2>
              <form onSubmit={handleAuthSubmit} className="space-y-4">
-                <input type="password" autoFocus value={passwordInput} onChange={(e) => { setPasswordInput(e.target.value); if (authError) setAuthError(false); }} placeholder="Enter Password" className={`w-full bg-zinc-800 border-2 rounded-2xl p-4 text-center text-xl font-black tracking-[0.5em] text-white focus:outline-none transition-all ${authError ? 'border-red-600' : 'border-transparent focus:border-red-600/50'}`} />
+                <input type="password" autoFocus value={passwordInput} onChange={(e) => { setPasswordInput(e.target.value); if (authError) setAuthError(false); }} placeholder="••••" className={`w-full bg-zinc-800 border-2 rounded-2xl p-4 text-center text-2xl font-black tracking-[0.5em] text-white focus:outline-none transition-all ${authError ? 'border-red-600' : 'border-transparent focus:border-red-600/50'}`} />
                 <div className="flex gap-2 pt-4">
-                  <button type="button" onClick={() => setShowAuthModal(false)} className="flex-1 bg-zinc-800 text-white font-black py-4 rounded-2xl text-xs uppercase tracking-widest">Cancel</button>
-                  <button type="submit" className="flex-[2] bg-red-600 text-white font-black py-4 rounded-2xl shadow-xl text-xs uppercase tracking-widest">Authenticate</button>
+                  <button type="button" onClick={() => setShowAuthModal(false)} className="flex-1 bg-zinc-800 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest">Cancel</button>
+                  <button type="submit" className="flex-[2] bg-red-600 text-white font-black py-4 rounded-2xl shadow-xl text-[10px] uppercase tracking-widest">Login</button>
                 </div>
              </form>
           </div>
@@ -286,33 +311,33 @@ const App: React.FC = () => {
       )}
 
       {showInstallModal && (
-        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-xl">
-          <div className="w-full max-w-lg bg-zinc-900 rounded-t-[3rem] sm:rounded-[3rem] border border-white/10 shadow-2xl overflow-y-auto no-scrollbar pb-[calc(env(safe-area-inset-bottom)+12rem)] max-h-[90vh]">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl">
+          <div className="w-full max-w-md bg-zinc-900 rounded-[3rem] border border-white/10 shadow-4xl overflow-hidden animate-in zoom-in-95 duration-300">
              <div className="p-10 text-center">
-               <div className="w-24 h-24 bg-red-600 rounded-3xl mx-auto mb-8 flex items-center justify-center text-4xl text-white shadow-2xl shadow-red-900/40 animate-bounce">📲</div>
-               <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-4">Add to <span className="text-red-600">Home Screen</span></h2>
-               <p className="text-sm font-medium text-zinc-400 mb-8 leading-relaxed px-4">Install FlexSheetz on your device for the full-screen experience without browser toolbars.</p>
+               <div className="w-20 h-20 bg-red-600 rounded-3xl mx-auto mb-8 flex items-center justify-center text-3xl text-white shadow-2xl shadow-red-900/40">📲</div>
+               <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white mb-3">Install <span className="text-red-600">FlexSheetz</span></h2>
+               <p className="text-xs font-medium text-zinc-400 mb-8 leading-relaxed">Install for a distraction-free full screen experience.</p>
                
                <div className="text-left bg-black/40 p-6 rounded-3xl border border-white/5 space-y-4 mb-10">
                   <div className="flex items-start gap-4">
-                      <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 mt-0.5">1</div>
-                      <p className="text-xs text-zinc-300 font-medium">Tap the <span className="text-white font-black">Share</span> button in Safari or the <span className="text-white font-black">Menu</span> icon in Chrome.</p>
+                      <div className="w-5 h-5 bg-red-600 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0 mt-0.5">1</div>
+                      <p className="text-[11px] text-zinc-300 font-medium">Tap the <span className="text-white font-black uppercase tracking-tighter">Share</span> icon at the bottom of Safari.</p>
                   </div>
                   <div className="flex items-start gap-4">
-                      <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 mt-0.5">2</div>
-                      <p className="text-xs text-zinc-300 font-medium">Find and select <span className="text-red-500 font-black italic">"Add to Home Screen"</span>.</p>
+                      <div className="w-5 h-5 bg-red-600 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0 mt-0.5">2</div>
+                      <p className="text-[11px] text-zinc-300 font-medium">Select <span className="text-red-500 font-black italic uppercase tracking-tighter">"Add to Home Screen"</span> from the list.</p>
                   </div>
                   <div className="flex items-start gap-4">
-                      <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-[10px] font-black text-white shrink-0 mt-0.5">3</div>
-                      <p className="text-xs text-zinc-300 font-medium">Launch <span className="text-white font-black">FlexSheetz</span> from your home screen for the full app experience.</p>
+                      <div className="w-5 h-5 bg-red-600 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0 mt-0.5">3</div>
+                      <p className="text-[11px] text-zinc-300 font-medium">Launch <span className="text-white font-black italic uppercase tracking-tighter">FlexSheetz</span> from your home screen.</p>
                   </div>
                </div>
 
                <button 
                  onClick={() => setShowInstallModal(false)}
-                 className="w-full bg-red-600 text-white font-black py-5 rounded-3xl shadow-xl shadow-red-900/30 text-xs uppercase tracking-[0.2em] active:scale-95 transition-all"
+                 className="w-full bg-red-600 text-white font-black py-5 rounded-3xl shadow-xl shadow-red-900/30 text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all"
                >
-                 Got it
+                 Dismiss
                </button>
              </div>
           </div>
