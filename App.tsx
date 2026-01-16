@@ -334,8 +334,8 @@ const App: React.FC = () => {
 
       <main className="flex-1 overflow-y-auto no-scrollbar relative z-10">
         {showNotifications && (
-          <div className="absolute inset-0 z-[120] bg-black/95 backdrop-blur-xl overflow-y-auto">
-             <div className="p-8 max-w-lg mx-auto pb-32">
+          <div className="absolute inset-0 z-[150] bg-black/95 backdrop-blur-xl overflow-y-auto">
+             <div className="p-8 max-w-lg mx-auto pb-40">
                 <header className="flex justify-between items-center mb-10">
                    <div>
                      <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white">Alert <span className="text-red-600">Inbox</span></h2>
@@ -383,9 +383,9 @@ const App: React.FC = () => {
         )}
 
         {showSettings ? (
-          <div className="absolute inset-0 z-[120] bg-inherit overflow-y-auto">
+          <div className="absolute inset-0 z-[150] bg-inherit overflow-y-auto">
              <Settings state={state} updateState={updateState} onRefresh={() => state.github && pullFromGitHub(state.github)} onLogout={handleLogout} />
-             <div className="p-4 flex justify-center pb-20">
+             <div className="p-4 flex justify-center pb-40">
                 <button 
                   onClick={() => setShowSettings(false)}
                   className="bg-zinc-900 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest border border-white/5 active:scale-95 transition-all"
@@ -431,7 +431,7 @@ const App: React.FC = () => {
       )}
 
       {showAuthModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
           <div className="w-full max-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 p-8 shadow-2xl text-center">
              <div className="w-16 h-16 bg-red-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-2xl text-white">🔒</div>
              <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white mb-2">Admin <span className="text-red-600">Login</span></h2>
@@ -459,8 +459,8 @@ const App: React.FC = () => {
       )}
 
       {showInstallModal && (
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-xl">
-          <div className="w-full max-w-lg bg-zinc-900 rounded-t-[3rem] sm:rounded-[3rem] border border-white/10 p-10 shadow-2xl text-center">
+        <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-xl">
+          <div className="w-full max-w-lg bg-zinc-900 rounded-t-[3rem] sm:rounded-[3rem] border border-white/10 p-10 shadow-2xl text-center pb-[calc(env(safe-area-inset-bottom)+2rem)]">
              <div className="w-24 h-24 bg-red-600 rounded-3xl mx-auto mb-8 flex items-center justify-center text-4xl text-white shadow-2xl shadow-red-900/40">📲</div>
              <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-4">Add to <span className="text-red-600">Home Screen</span></h2>
              <p className="text-sm font-medium text-zinc-400 mb-6 leading-relaxed px-4">Install FlexSheetz on your device for the full-screen experience. No browser address bar, just the app.</p>

@@ -40,7 +40,6 @@ const Locations: React.FC<LocationsProps> = ({ state }) => {
       <div className="grid gap-6 sm:grid-cols-2">
         {state.stores.map(store => (
           <div key={store.id} className="bg-zinc-900/50 backdrop-blur-sm border border-white/5 rounded-[2.5rem] p-8 relative group overflow-hidden shadow-2xl transition-all hover:border-red-500/30">
-             {/* Large background number decoration */}
              <div className="absolute -top-4 -right-4 opacity-[0.03] font-black text-9xl select-none group-hover:opacity-[0.07] transition-opacity italic text-white">
                {store.number}
              </div>
@@ -83,17 +82,14 @@ const Locations: React.FC<LocationsProps> = ({ state }) => {
         ))}
       </div>
 
-      {/* Map Provider Action Sheet Overlay */}
       {activeMenuStore && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 sm:p-6">
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6">
           <div 
             className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
             onClick={() => setActiveMenuStore(null)}
           />
           
-          {/* Menu Card */}
-          <div className="relative w-full max-w-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
+          <div className="relative w-full max-w-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 shadow-4xl overflow-hidden animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-300 pb-[env(safe-area-inset-bottom)]">
             <div className="p-8 pb-4">
               <h3 className="text-2xl font-black text-center mb-1 text-white">Open in Maps</h3>
               <p className="text-center text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-8 text-white/50">Select your preferred navigation app</p>

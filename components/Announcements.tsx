@@ -89,7 +89,6 @@ const Announcements: React.FC<AnnouncementsProps> = ({ state, updateState, isAut
         )}
       </header>
 
-      {/* Filter Bar */}
       <div className="flex gap-2 overflow-x-auto pb-6 mb-2 custom-scrollbar no-scrollbar">
         {(['ALL', 'URGENT', 'SAFETY', 'UPDATE', 'GENERAL'] as const).map(cat => (
           <button
@@ -115,7 +114,6 @@ const Announcements: React.FC<AnnouncementsProps> = ({ state, updateState, isAut
                 key={ann.id} 
                 className="bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group hover:bg-zinc-900/60 transition-all"
               >
-                {/* Visual Accent */}
                 <div className={`absolute top-0 left-0 w-2 h-full ${styles.bg}`} />
                 
                 <div className="flex justify-between items-start mb-6">
@@ -156,10 +154,9 @@ const Announcements: React.FC<AnnouncementsProps> = ({ state, updateState, isAut
         )}
       </div>
 
-      {/* Creation Modal Overlay */}
       {isAdding && isAuthenticated && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
-           <div className="w-full max-w-lg bg-zinc-900 rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden animate-in slide-in-from-bottom-20 duration-500">
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+           <div className="w-full max-w-lg bg-zinc-900 rounded-[2.5rem] border border-white/10 shadow-4xl overflow-hidden animate-in slide-in-from-bottom-20 duration-500 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
               <div className="p-8">
                 <header className="flex justify-between items-center mb-8">
                    <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white">Draft <span className="text-red-600">Post</span></h2>

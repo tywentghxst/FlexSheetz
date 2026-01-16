@@ -22,7 +22,6 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
   const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null);
   const [activeRotationWeek, setActiveRotationWeek] = useState<'week1' | 'week2'>('week1');
 
-  // Fix: Explicitly typing the accumulator in reduce to Record<string, RotationDay> to satisfy TypeScript
   const createUnscheduledRotation = (shift: ShiftType): { week1: Record<string, RotationDay>, week2: Record<string, RotationDay> } => ({
     week1: Array.from({ length: 7 }).reduce<Record<string, RotationDay>>((acc, _, i) => {
       acc[i.toString()] = { 
@@ -317,7 +316,6 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
         )}
       </header>
 
-      {/* Settings Sub-Tabs */}
       <div className="flex bg-zinc-900 p-1.5 rounded-2xl border border-white/5 mb-8 shadow-inner">
         {(['Team', 'Stores', 'General'] as SettingsSubTab[]).map(tab => (
           <button
@@ -340,10 +338,9 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
         {activeSubTab === 'General' && renderGeneralSection()}
       </main>
 
-      {/* Employee Editor Overlay */}
       {isEditingEmployee && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-           <div className="w-full max-w-xl bg-zinc-900 rounded-[2.5rem] border border-white/10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+           <div className="w-full max-w-xl bg-zinc-900 rounded-[2.5rem] border border-white/10 shadow-4xl overflow-y-auto max-h-[90vh] custom-scrollbar pb-[calc(env(safe-area-inset-bottom)+2rem)]">
               <div className="p-8">
                 <header className="flex justify-between items-center mb-8">
                    <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white">{editingEmployeeId ? 'Edit' : 'New'} <span style={{ color: COLORS.sheetzRed }}>Supervisor</span></h2>
