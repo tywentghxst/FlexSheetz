@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AppState, GitHubConfig, ChangeLog, DayStatus } from './types';
-import { INITIAL_STORES, COLORS } from './constants';
-import Schedule from './components/Schedule';
-import Locations from './components/Locations';
-import Announcements from './components/Announcements';
-import History from './components/History';
-import Settings from './components/Settings';
-import Team from './components/Team';
+import { AppState, GitHubConfig, ChangeLog, DayStatus } from './types.ts';
+import { INITIAL_STORES, COLORS } from './constants.tsx';
+import Schedule from './components/Schedule.tsx';
+import Locations from './components/Locations.tsx';
+import Announcements from './components/Announcements.tsx';
+import History from './components/History.tsx';
+import Settings from './components/Settings.tsx';
+import Team from './components/Team.tsx';
 import { format } from 'date-fns';
 
 const LOCAL_STORAGE_KEY = 'flexsheetz_local_state';
@@ -66,7 +66,7 @@ const App: React.FC = () => {
         const body = `${latestLog.field}: ${latestLog.newValue}`;
         
         if (Notification.permission === 'granted') {
-          new Notification(title, { body, icon: '/favicon.ico' });
+          new Notification(title, { body, icon: 'https://www.sheetz.com/favicon.ico' });
         }
 
         setLocalNotifications(prev => [{
@@ -97,7 +97,7 @@ const App: React.FC = () => {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: any) => {
+    const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
@@ -228,7 +228,7 @@ const App: React.FC = () => {
     if (state.github?.token && state.github?.repo) {
       pullFromGitHub(state.github);
     }
-  }, []);
+  }, [pullFromGitHub, state.github?.repo, state.github?.token]);
 
   const updateState = (updater: (prev: AppState) => AppState) => {
     if (!isAuthenticated) return;
@@ -271,13 +271,12 @@ const App: React.FC = () => {
                 syncStatus === 'synced' ? 'bg-emerald-400' : 
                 syncStatus === 'syncing' ? 'bg-yellow-400 animate-pulse' : 
                 syncStatus === 'error' ? 'bg-red-400' : 'bg-white/20'
-            }`} />
+            }`} title={`Sync Status: ${syncStatus}`} />
 
             {!isStandalone && (
               <button 
                 onClick={handleInstallClick}
                 className="bg-white/10 text-white p-2.5 rounded-xl border border-white/20 flex items-center gap-2 hover:bg-white/20 transition-all active:scale-95 shadow-lg group relative"
-                aria-label="Install App"
               >
                 <span className="text-xl">📲</span>
               </button>
@@ -317,7 +316,7 @@ const App: React.FC = () => {
 
       <main className="flex-1 pb-24 overflow-x-hidden relative">
         {showNotifications && (
-          <div className="absolute inset-0 z-[55] bg-black/95 backdrop-blur-xl animate-in fade-in slide-in-from-top-4 duration-300 overflow-y-auto">
+          <div className="absolute inset-0 z-[55] bg-black/95 backdrop-blur-xl overflow-y-auto">
              <div className="p-8 max-w-lg mx-auto pb-32">
                 <header className="flex justify-between items-center mb-10">
                    <div>
@@ -329,7 +328,7 @@ const App: React.FC = () => {
                 
                 <div className="space-y-4">
                   {subscribedIds.length === 0 ? (
-                    <div className="animate-in zoom-in-95 duration-500 bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-10 text-center">
+                    <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-10 text-center">
                        <div className="w-20 h-20 bg-red-600/10 rounded-3xl mx-auto mb-6 flex items-center justify-center text-4xl">🔔</div>
                        <h3 className="text-xl font-black italic uppercase tracking-tighter text-white mb-2">Enable <span className="text-red-600">Alerts</span></h3>
                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.15em] mb-8 leading-relaxed">Follow team members to receive real-time schedule updates.</p>
@@ -342,7 +341,7 @@ const App: React.FC = () => {
                     </div>
                   ) : localNotifications.length > 0 ? (
                     localNotifications.map(notif => (
-                      <div key={notif.id} className="bg-zinc-900 border border-red-500/10 p-5 rounded-3xl flex items-start gap-4 shadow-xl animate-in slide-in-from-left-4 duration-300">
+                      <div key={notif.id} className="bg-zinc-900 border border-red-500/10 p-5 rounded-3xl flex items-start gap-4 shadow-xl">
                          <div className="w-10 h-10 bg-red-600/10 rounded-2xl flex items-center justify-center text-xl shrink-0">🔔</div>
                          <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-center mb-1">
@@ -357,6 +356,7 @@ const App: React.FC = () => {
                     <div className="py-32 flex flex-col items-center justify-center text-center opacity-30">
                        <span className="text-6xl mb-6">📭</span>
                        <p className="text-sm font-black uppercase tracking-widest">Watching {subscribedIds.length} Team Members</p>
+                       <p className="text-[10px] font-bold uppercase tracking-widest mt-2">No new changes recorded</p>
                     </div>
                   )}
                 </div>
@@ -365,10 +365,15 @@ const App: React.FC = () => {
         )}
 
         {showSettings ? (
-          <div className="absolute inset-0 z-[55] bg-inherit animate-in fade-in slide-in-from-top-4 duration-300 overflow-y-auto">
+          <div className="absolute inset-0 z-[55] bg-inherit overflow-y-auto">
              <Settings state={state} updateState={updateState} onRefresh={() => state.github && pullFromGitHub(state.github)} onLogout={handleLogout} />
              <div className="p-4 flex justify-center pb-20">
-                <button onClick={() => setShowSettings(false)} className="bg-zinc-900 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest border border-white/5 active:scale-95 transition-all">Close Settings</button>
+                <button 
+                  onClick={() => setShowSettings(false)}
+                  className="bg-zinc-900 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest border border-white/5 active:scale-95 transition-all"
+                >
+                  Close Settings
+                </button>
              </div>
           </div>
         ) : (
@@ -408,8 +413,8 @@ const App: React.FC = () => {
       )}
 
       {showAuthModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 p-8 shadow-2xl text-center">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="w-full max-w-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 p-8 shadow-2xl text-center">
              <div className="w-16 h-16 bg-red-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-2xl text-white">🔒</div>
              <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white mb-2">Admin <span className="text-red-600">Login</span></h2>
              <form onSubmit={handleAuthSubmit} className="space-y-4">
@@ -436,31 +441,11 @@ const App: React.FC = () => {
       )}
 
       {showInstallModal && (
-        <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className="w-full max-w-lg bg-zinc-900 rounded-t-[3rem] sm:rounded-[3rem] border border-white/10 p-10 shadow-2xl text-center animate-in slide-in-from-bottom-20 duration-500">
+        <div className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-xl">
+          <div className="w-full max-w-lg bg-zinc-900 rounded-t-[3rem] sm:rounded-[3rem] border border-white/10 p-10 shadow-2xl text-center">
              <div className="w-24 h-24 bg-red-600 rounded-3xl mx-auto mb-8 flex items-center justify-center text-4xl text-white shadow-2xl shadow-red-900/40">📲</div>
-             <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-4">Install <span className="text-red-600">FlexSheetz</span></h2>
+             <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-4">Add to <span className="text-red-600">Home Screen</span></h2>
              <p className="text-sm font-medium text-zinc-400 mb-10 leading-relaxed px-4">Install FlexSheetz on your device for the best experience. Access your schedule with a single tap, even when offline.</p>
-             
-             <div className="space-y-6 text-left mb-10">
-                {isIOS ? (
-                  <>
-                    <div className="flex items-start gap-4 p-4 bg-zinc-800/50 rounded-2xl border border-white/5">
-                      <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center font-black text-xs shrink-0">1</div>
-                      <p className="text-xs font-bold text-zinc-200">Tap the <span className="text-blue-500 font-black">Share</span> icon in the bottom browser bar.</p>
-                    </div>
-                    <div className="flex items-start gap-4 p-4 bg-zinc-800/50 rounded-2xl border border-white/5">
-                      <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center font-black text-xs shrink-0">2</div>
-                      <p className="text-xs font-bold text-zinc-200">Scroll down and select <span className="text-white font-black">"Add to Home Screen"</span>.</p>
-                    </div>
-                  </>
-                ) : (
-                  <div className="p-6 bg-zinc-800/50 rounded-2xl border border-white/5 text-center">
-                    <p className="text-xs font-bold text-zinc-400">Open your browser menu (usually three dots) and select <span className="text-white font-black">"Install App"</span> or <span className="text-white font-black">"Add to Home Screen"</span>.</p>
-                  </div>
-                )}
-             </div>
-
              <button 
                onClick={() => setShowInstallModal(false)}
                className="w-full bg-red-600 text-white font-black py-5 rounded-3xl shadow-xl text-xs uppercase tracking-[0.2em] active:scale-95 transition-all"
