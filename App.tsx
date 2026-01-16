@@ -53,6 +53,69 @@ const App: React.FC = () => {
 
   const lastLogIdRef = useRef<string | null>(state.logs?.[state.logs.length - 1]?.id || null);
 
+  // Full Screen & PWA Logic
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const checkIfStandalone = () => {
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || 
+                               window.matchMedia('(display-mode: fullscreen)').matches ||
+                               (window.navigator as any).standalone === true;
+      setIsStandalone(isStandaloneMode);
+      
+      if (isStandaloneMode) {
+        // Lock to portrait on devices that support it
+        if (screen.orientation && (screen.orientation as any).lock) {
+          (screen.orientation as any).lock('portrait').catch(() => {});
+        }
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    checkIfStandalone();
+    
+    // Attempt to trigger true Fullscreen API on first click if in standalone mode (Android/Chrome focus)
+    const requestTrueFullscreen = () => {
+      if (isStandalone && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+      // Remove listener after first interaction
+      document.removeEventListener('click', requestTrueFullscreen);
+    };
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+       document.addEventListener('click', requestTrueFullscreen);
+    }
+
+    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    mediaQuery.addEventListener('change', checkIfStandalone);
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      mediaQuery.removeEventListener('change', checkIfStandalone);
+      document.removeEventListener('click', requestTrueFullscreen);
+    };
+  }, [isStandalone]);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else {
+      setShowInstallModal(true);
+    }
+  };
+
   useEffect(() => {
     if (!state.logs || state.logs.length === 0) return;
     
@@ -90,47 +153,6 @@ const App: React.FC = () => {
       localStorage.setItem(SUBSCRIPTIONS_KEY, JSON.stringify(next));
       return next;
     });
-  };
-
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallModal, setShowInstallModal] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    const checkIfStandalone = () => {
-      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || 
-                               (window.navigator as any).standalone === true ||
-                               document.referrer.includes('android-app://');
-      setIsStandalone(isStandaloneMode);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    checkIfStandalone();
-    
-    const mediaQuery = window.matchMedia('(display-mode: standalone)');
-    mediaQuery.addEventListener('change', checkIfStandalone);
-    
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      mediaQuery.removeEventListener('change', checkIfStandalone);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-      }
-    } else {
-      setShowInstallModal(true);
-    }
   };
 
   const handleAuthSubmit = (e?: React.FormEvent) => {
@@ -245,8 +267,8 @@ const App: React.FC = () => {
   const currentThemeClass = state.darkMode ? 'bg-black text-white' : 'bg-gray-50 text-gray-900';
 
   return (
-    <div className={`min-h-screen flex flex-col ${currentThemeClass} transition-colors duration-300`}>
-      <header className="sticky top-0 z-[60] shadow-xl" style={{ backgroundColor: COLORS.sheetzRed }}>
+    <div className={`flex flex-col h-full w-full overflow-hidden ${currentThemeClass} transition-colors duration-300`}>
+      <header className="shrink-0 z-[60] shadow-xl" style={{ backgroundColor: COLORS.sheetzRed }}>
         <div className="px-4 py-4 flex justify-between items-center">
           <div className="flex flex-col">
             <h1 className="font-black text-2xl tracking-tighter text-white uppercase italic leading-none">
@@ -313,7 +335,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 pb-24 overflow-x-hidden relative">
+      <main className="flex-1 overflow-y-auto no-scrollbar relative">
         {showNotifications && (
           <div className="absolute inset-0 z-[55] bg-black/95 backdrop-blur-xl overflow-y-auto">
              <div className="p-8 max-w-lg mx-auto pb-32">
@@ -387,7 +409,7 @@ const App: React.FC = () => {
       </main>
 
       {!showSettings && !showNotifications && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-t border-white/10 px-2 py-2">
+        <nav className="shrink-0 z-50 bg-black/80 backdrop-blur-md border-t border-white/10 px-2 py-2">
           <div className="flex justify-around items-center max-w-4xl mx-auto">
             {[
               { id: 'Schedule', icon: '📅' },
@@ -400,7 +422,7 @@ const App: React.FC = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 flex flex-col items-center p-2 rounded-xl transition-all ${
-                  activeTab === tab.id ? 'bg-white/10 text-white' : 'text-gray-500'
+                  activeTab === tab.id ? 'bg-white/10 text-white' : 'text-zinc-500 shadow-none'
                 }`}
               >
                 <span className="text-xl mb-1">{tab.icon}</span>
@@ -413,7 +435,7 @@ const App: React.FC = () => {
 
       {showAuthModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="w-full max-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 p-8 shadow-2xl text-center">
+          <div className="w-full max-w-sm bg-zinc-900 rounded-[2.5rem] border border-white/10 p-8 shadow-2xl text-center">
              <div className="w-16 h-16 bg-red-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-2xl text-white">🔒</div>
              <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white mb-2">Admin <span className="text-red-600">Login</span></h2>
              <form onSubmit={handleAuthSubmit} className="space-y-4">
@@ -444,7 +466,23 @@ const App: React.FC = () => {
           <div className="w-full max-w-lg bg-zinc-900 rounded-t-[3rem] sm:rounded-[3rem] border border-white/10 p-10 shadow-2xl text-center">
              <div className="w-24 h-24 bg-red-600 rounded-3xl mx-auto mb-8 flex items-center justify-center text-4xl text-white shadow-2xl shadow-red-900/40">📲</div>
              <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-4">Add to <span className="text-red-600">Home Screen</span></h2>
-             <p className="text-sm font-medium text-zinc-400 mb-10 leading-relaxed px-4">Install FlexSheetz on your device for the best experience. Access your schedule with a single tap, even when offline.</p>
+             <p className="text-sm font-medium text-zinc-400 mb-6 leading-relaxed px-4">Install FlexSheetz on your device for the full-screen experience. No browser address bar, just the app.</p>
+             
+             <div className="text-left bg-black/40 p-4 rounded-2xl mb-8 space-y-3">
+                <div className="flex items-start gap-3">
+                    <span className="bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">1</span>
+                    <p className="text-xs text-zinc-300">Tap the <span className="text-white font-bold">Share</span> button (Safari) or <span className="text-white font-bold">Menu</span> (Chrome).</p>
+                </div>
+                <div className="flex items-start gap-3">
+                    <span className="bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">2</span>
+                    <p className="text-xs text-zinc-300">Select <span className="text-white font-bold text-red-500 italic">"Add to Home Screen"</span>.</p>
+                </div>
+                <div className="flex items-start gap-3">
+                    <span className="bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">3</span>
+                    <p className="text-xs text-zinc-300">Open <span className="text-white font-bold">FlexSheetz</span> from your home screen.</p>
+                </div>
+             </div>
+
              <button 
                onClick={() => setShowInstallModal(false)}
                className="w-full bg-red-600 text-white font-black py-5 rounded-3xl shadow-xl text-xs uppercase tracking-[0.2em] active:scale-95 transition-all"

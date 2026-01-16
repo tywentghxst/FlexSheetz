@@ -22,23 +22,24 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
   const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null);
   const [activeRotationWeek, setActiveRotationWeek] = useState<'week1' | 'week2'>('week1');
 
-  const createUnscheduledRotation = (shift: ShiftType) => ({
-    week1: Array.from({ length: 7 }).reduce((acc, _, i) => {
-      acc[i] = { 
+  // Fix: Explicitly typing the accumulator in reduce to Record<string, RotationDay> to satisfy TypeScript
+  const createUnscheduledRotation = (shift: ShiftType): { week1: Record<string, RotationDay>, week2: Record<string, RotationDay> } => ({
+    week1: Array.from({ length: 7 }).reduce<Record<string, RotationDay>>((acc, _, i) => {
+      acc[i.toString()] = { 
         status: DayStatus.UNSCHEDULED, 
         startTime: SHIFT_DEFAULTS[shift].start, 
         endTime: SHIFT_DEFAULTS[shift].end 
       };
       return acc;
-    }, {} as Record<string, RotationDay>),
-    week2: Array.from({ length: 7 }).reduce((acc, _, i) => {
-      acc[i] = { 
+    }, {}),
+    week2: Array.from({ length: 7 }).reduce<Record<string, RotationDay>>((acc, _, i) => {
+      acc[i.toString()] = { 
         status: DayStatus.UNSCHEDULED, 
         startTime: SHIFT_DEFAULTS[shift].start, 
         endTime: SHIFT_DEFAULTS[shift].end 
       };
       return acc;
-    }, {} as Record<string, RotationDay>)
+    }, {})
   });
 
   const [employeeFormData, setEmployeeFormData] = useState<Partial<Employee>>({
@@ -297,7 +298,7 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
       </section>
 
       <section className="pt-6 space-y-3">
-        <button onLogout={onLogout} className="w-full bg-white/5 border border-white/10 text-white font-black py-4 rounded-2xl text-[10px] tracking-widest active:bg-zinc-800 transition-all uppercase">Logout of Admin Session</button>
+        <button onClick={onLogout} className="w-full bg-white/5 border border-white/10 text-white font-black py-4 rounded-2xl text-[10px] tracking-widest active:bg-zinc-800 transition-all uppercase">Logout of Admin Session</button>
         <button onClick={handleReset} className="w-full bg-zinc-900 border border-red-500/20 text-red-500 font-black py-4 rounded-2xl text-[10px] tracking-widest active:bg-red-500 active:text-white transition-all uppercase">Factory Reset All Data</button>
         <p className="text-center text-[8px] font-bold text-zinc-700 mt-4 uppercase tracking-[4px]">FlexSheetz v2.3.0-Admin</p>
       </section>
@@ -372,14 +373,14 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
                     </div>
                     <div className="space-y-3">
                        {DAYS_OF_WEEK.map((day, idx) => {
-                         const rot = employeeFormData.rotation?.[activeRotationWeek][idx];
+                         const rot = employeeFormData.rotation?.[activeRotationWeek][idx.toString()];
                          if (!rot) return null;
                          const isWork = rot.status === DayStatus.WORK || rot.status === DayStatus.UNSCHEDULED;
                          return (
                            <div key={day} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-2xl border border-white/5">
                               <span className="w-10 text-[10px] font-black text-zinc-500">{day}</span>
-                              <select className="flex-1 bg-zinc-900 border-none rounded-lg text-[10px] p-2 font-bold text-white" value={rot.status} onChange={e => { const nextRot = { ...employeeFormData.rotation! }; nextRot[activeRotationWeek][idx].status = e.target.value as DayStatus; setEmployeeFormData({ ...employeeFormData, rotation: nextRot }); }}>{Object.values(DayStatus).map(st => <option key={st} value={st}>{st}</option>)}</select>
-                              {isWork && ( <input type="time" className="bg-zinc-900 border-none rounded-lg text-[10px] p-2 font-bold w-24 text-white" value={rot.startTime} onChange={e => { const nextRot = { ...employeeFormData.rotation! }; nextRot[activeRotationWeek][idx].startTime = e.target.value; const [h, m] = e.target.value.split(':').map(Number); let totalMins = h * 60 + m + 630; nextRot[activeRotationWeek][idx].endTime = `${String(Math.floor(totalMins / 60) % 24).padStart(2, '0')}:${String(totalMins % 60).padStart(2, '0')}`; setEmployeeFormData({ ...employeeFormData, rotation: nextRot }); }} /> )}
+                              <select className="flex-1 bg-zinc-900 border-none rounded-lg text-[10px] p-2 font-bold text-white" value={rot.status} onChange={e => { const nextRot = { ...employeeFormData.rotation! }; nextRot[activeRotationWeek][idx.toString()].status = e.target.value as DayStatus; setEmployeeFormData({ ...employeeFormData, rotation: nextRot }); }}>{Object.values(DayStatus).map(st => <option key={st} value={st}>{st}</option>)}</select>
+                              {isWork && ( <input type="time" className="bg-zinc-900 border-none rounded-lg text-[10px] p-2 font-bold w-24 text-white" value={rot.startTime} onChange={e => { const nextRot = { ...employeeFormData.rotation! }; nextRot[activeRotationWeek][idx.toString()].startTime = e.target.value; const [h, m] = e.target.value.split(':').map(Number); let totalMins = h * 60 + m + 630; nextRot[activeRotationWeek][idx.toString()].endTime = `${String(Math.floor(totalMins / 60) % 24).padStart(2, '0')}:${String(totalMins % 60).padStart(2, '0')}`; setEmployeeFormData({ ...employeeFormData, rotation: nextRot }); }} /> )}
                            </div>
                          );
                        })}

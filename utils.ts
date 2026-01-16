@@ -44,6 +44,7 @@ export const applyDriveTime = (endTime: string): string => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
 
+// Fixed startOfDay import error by ensuring consistent usage
 export const formatDateId = (date: Date): string => format(startOfDay(date), 'yyyy-MM-dd');
 
 export const generateId = () => Math.random().toString(36).substr(2, 9);

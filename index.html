@@ -3,11 +3,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FlexSheetz">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#DA291C">
     <title>FlexSheetz</title>
+    
+    <link rel="manifest" href="metadata.json">
     
     <!-- External Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,26 +31,52 @@
 </script>
 
     <style>
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sar: env(safe-area-inset-right);
+            --sab: env(safe-area-inset-bottom);
+            --sal: env(safe-area-inset-left);
+        }
+
         body {
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior-y: contain;
             background-color: black;
             color: white;
             margin: 0;
+            padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: fixed; /* Prevents bounce scroll on iOS */
         }
-        #root { min-height: 100vh; background-color: black; }
+
+        #root { 
+            height: 100%;
+            height: -webkit-fill-available;
+            display: flex;
+            flex-direction: column;
+            background-color: black;
+            /* Using safe-area-inset-top for header padding if status bar is translucent */
+            padding-top: var(--sat);
+        }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Optimization for PWA Full Screen */
+        @media all and (display-mode: fullscreen), (display-mode: standalone) {
+            #root {
+                padding-top: var(--sat);
+                padding-bottom: var(--sab);
+            }
+        }
     </style>
 </head>
 <body class="bg-black text-white antialiased">
     <div id="root"></div>
 
-    <!-- 
-      Directly importing index.tsx within a script block 
-      ensures Babel handles the 'import' statements as ES modules.
-    -->
     <script type="text/babel" data-type="module">
         import './index.tsx';
     </script>
