@@ -51,7 +51,7 @@ const App: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'local'>('local');
   const [lastSha, setLastSha] = useState<string | null>(null);
 
-  const lastLogIdRef = useRef<string | null>(state.logs?.[state.logs.length - 1]?.id || null);
+  const lastLogIdRef = useRef<string | null>(null);
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
@@ -92,49 +92,62 @@ const App: React.FC = () => {
     }
   };
 
-  // Improved Notification Observer
+  // Enhanced Notification Logic with Store Resolution
   useEffect(() => {
     if (!state.logs || state.logs.length === 0) return;
     
     const latestLog = state.logs[state.logs.length - 1];
+    if (!latestLog || !latestLog.id) return;
     
-    // Guard: Prevent duplicate processing of the same log
+    // Prevent re-processing the same log entry
     if (latestLog.id === lastLogIdRef.current) return;
     lastLogIdRef.current = latestLog.id;
 
-    // Logic: Find if the user involved in this log is someone we are subscribed to
+    // Identify if the log belongs to a followed employee
     const targetEmployee = state.employees?.find(e => 
-        e.name === latestLog.userName && subscribedIds.includes(e.id)
+      e.name === latestLog.userName && subscribedIds.includes(e.id)
     );
 
     if (targetEmployee && (latestLog.action === 'OVERRIDE' || latestLog.action === 'REVERT')) {
-      const title = `Update: ${targetEmployee.name}`;
-      const body = `${latestLog.field}: ${latestLog.newValue || 'Default'}`;
+      const title = `Staff Alert: ${targetEmployee.name}`;
+      
+      // Resolve store IDs to Store Numbers for readability
+      let detailedValue = latestLog.newValue || 'Default';
+      const isStoreField = latestLog.field === 'Store' || latestLog.field === 'Home Store' || latestLog.field === 'Store Assignment';
+      
+      if (isStoreField && latestLog.newValue) {
+        const store = state.stores.find(s => s.id === latestLog.newValue || s.number === latestLog.newValue);
+        detailedValue = store ? `Store #${store.number}` : latestLog.newValue;
+      }
 
-      // 1. Browser Notification
+      const body = latestLog.action === 'REVERT' 
+        ? `Reset to standard rotation schedule.` 
+        : `${latestLog.field} updated to ${detailedValue}`;
+
+      // Trigger Browser API Notification
       if (window.Notification && Notification.permission === 'granted') {
         try {
           new Notification(title, { body });
-        } catch (e) {
-          console.error("Notification error:", e);
+        } catch (err) {
+          console.error("System notification error:", err);
         }
       }
 
-      // 2. Local App Inbox
+      // Add to local UI-based Alert Inbox
       setLocalNotifications(prev => [
-        { 
-          id: latestLog.id, 
-          title, 
-          body, 
-          timestamp: latestLog.timestamp 
-        }, 
+        {
+          id: latestLog.id,
+          title,
+          body,
+          timestamp: latestLog.timestamp,
+          userName: latestLog.userName
+        },
         ...prev
-      ].slice(0, 50));
+      ].slice(0, 30));
     }
-  }, [state.logs, subscribedIds, state.employees]);
+  }, [state.logs, subscribedIds, state.employees, state.stores]);
 
   const toggleSubscription = async (id: string) => {
-    // Request permissions on first interaction
     if (window.Notification && Notification.permission === 'default') {
       await Notification.requestPermission();
     }
@@ -200,7 +213,7 @@ const App: React.FC = () => {
         currentSha = getData.sha;
       }
       const body = { 
-        message: `Update: ${new Date().toISOString()}`, 
+        message: `Cloud Sync: ${new Date().toISOString()}`, 
         content: btoa(JSON.stringify(newState, null, 2)), 
         branch: config.branch, 
         sha: currentSha || undefined 
@@ -266,8 +279,8 @@ const App: React.FC = () => {
 
       <main className="flex-1 overflow-y-auto no-scrollbar relative z-10">
         {showNotifications && (
-          <div className="fixed inset-0 z-[200] bg-black overflow-hidden flex flex-col">
-             <header className="shrink-0 bg-zinc-950 border-b border-white/10 px-6 pt-[calc(var(--sat)+1.5rem)] pb-8 flex justify-between items-center">
+          <div className="fixed inset-0 z-[200] bg-black overflow-hidden flex flex-col pt-[var(--sat)]">
+             <header className="shrink-0 bg-zinc-950 border-b border-white/10 px-6 py-8 flex justify-between items-center">
                 <div>
                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white leading-none">Alert <span className="text-red-600">Inbox</span></h2>
                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Personnel Updates</p>
@@ -279,27 +292,27 @@ const App: React.FC = () => {
                   <div className="bg-zinc-900/50 border border-white/5 rounded-[2.5rem] p-10 text-center my-12">
                      <div className="w-20 h-20 bg-red-600/10 rounded-3xl mx-auto mb-6 flex items-center justify-center text-4xl">🔔</div>
                      <h3 className="text-xl font-black italic uppercase tracking-tighter text-white mb-2">Enable <span className="text-red-600">Alerts</span></h3>
-                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.15em] mb-8 leading-relaxed">Follow supervisors in the Team Roster to see changes here.</p>
+                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.15em] mb-8 leading-relaxed">Follow team members in the Team tab to see live changes.</p>
                      <button onClick={() => { setActiveTab('Team'); setShowNotifications(false); }} className="w-full bg-red-600 text-white font-black py-4 rounded-2xl shadow-xl text-[10px] uppercase tracking-widest active:scale-95 transition-all">Go to Team Roster</button>
                   </div>
                 ) : localNotifications.length > 0 ? (
                   localNotifications.map(notif => (
-                    <div key={notif.id} className="bg-zinc-900 border border-red-500/10 p-5 rounded-3xl flex items-start gap-4 shadow-xl">
-                      <div className="w-10 h-10 bg-red-600/10 rounded-2xl flex items-center justify-center text-xl shrink-0">🔔</div>
+                    <div key={notif.id} className="bg-zinc-900 border border-white/5 p-5 rounded-3xl flex items-start gap-4 shadow-xl hover:border-red-600/30 transition-all">
+                      <div className="w-10 h-10 bg-red-600/10 rounded-2xl flex items-center justify-center text-xl shrink-0">📍</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-center mb-1">
-                          <h4 className="text-sm font-black text-white uppercase italic">{notif.title}</h4>
-                          <span className="text-[8px] font-bold text-zinc-500 uppercase">{format(notif.timestamp, 'h:mm a')}</span>
+                          <h4 className="text-sm font-black text-white uppercase italic truncate">{notif.userName}</h4>
+                          <span className="text-[8px] font-bold text-zinc-500 uppercase shrink-0 ml-2">{format(notif.timestamp, 'h:mm a')}</span>
                         </div>
-                        <p className="text-xs text-zinc-400 font-medium">{notif.body}</p>
+                        <p className="text-xs text-zinc-400 font-medium leading-relaxed">{notif.body}</p>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="py-32 flex flex-col items-center justify-center text-center opacity-30">
                     <span className="text-6xl mb-6">📭</span>
-                    <p className="text-sm font-black uppercase tracking-widest">Watching {subscribedIds.length} Supervisors</p>
-                    <p className="text-[9px] font-bold mt-2 uppercase tracking-widest">No new updates found</p>
+                    <p className="text-sm font-black uppercase tracking-widest">Watching {subscribedIds.length} Team Members</p>
+                    <p className="text-[9px] font-bold mt-2 uppercase tracking-widest">No recent alerts found</p>
                   </div>
                 )}
              </div>
@@ -309,7 +322,7 @@ const App: React.FC = () => {
           <div className="fixed inset-0 z-[200] bg-black overflow-y-auto no-scrollbar pt-[var(--sat)]">
              <Settings state={state} updateState={updateState} onRefresh={() => state.github && pullFromGitHub(state.github)} onLogout={handleLogout} />
              <div className="p-8 flex justify-center pb-64">
-                <button onClick={() => setShowSettings(false)} className="w-full max-w-sm bg-zinc-900 text-white px-8 py-5 rounded-[2rem] font-black uppercase tracking-widest border border-white/10 active:scale-95 transition-all shadow-2xl">Return to App</button>
+                <button onClick={() => setShowSettings(false)} className="w-full max-sm bg-zinc-900 text-white px-8 py-5 rounded-[2rem] font-black uppercase tracking-widest border border-white/10 active:scale-95 transition-all shadow-2xl">Return to App</button>
              </div>
           </div>
         ) : (
