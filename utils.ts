@@ -3,7 +3,7 @@ import { format, addDays, startOfDay, differenceInCalendarWeeks } from 'date-fns
 import { ANCHOR_DATE } from './constants.tsx';
 
 export const getWeekNumber = (date: Date): number => {
-  const diff = differenceInCalendarWeeks(date, ANCHOR_DATE, { weekStartsOn: 5 }); // Sheetz weeks start Friday
+  const diff = differenceInCalendarWeeks(date, ANCHOR_DATE, { weekStartsOn: 5 });
   return diff + 1;
 };
 
@@ -28,7 +28,7 @@ export const formatTo12h = (time24: string): string => {
 export const calculateEndTime = (startTime: string): string => {
   if (!startTime) return '';
   const [hours, minutes] = startTime.split(':').map(Number);
-  let totalMinutes = hours * 60 + minutes + 630; // 10.5 hours = 630 mins
+  let totalMinutes = hours * 60 + minutes + 630;
   const endHours = Math.floor(totalMinutes / 60) % 24;
   const endMinutes = totalMinutes % 60;
   return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
@@ -37,14 +37,17 @@ export const calculateEndTime = (startTime: string): string => {
 export const applyDriveTime = (endTime: string): string => {
   if (!endTime) return '';
   const [hours, minutes] = endTime.split(':').map(Number);
-  let totalMinutes = hours * 60 + minutes - 60; // -1 hour
+  let totalMinutes = hours * 60 + minutes - 60;
   if (totalMinutes < 0) totalMinutes += 1440;
   const h = Math.floor(totalMinutes / 60) % 24;
   const m = totalMinutes % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
 
-// Fixed startOfDay import error by ensuring consistent usage
-export const formatDateId = (date: Date): string => format(startOfDay(date), 'yyyy-MM-dd');
+export const formatDateId = (date: Date): string => {
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  return format(d, 'yyyy-MM-dd');
+};
 
-export const generateId = () => Math.random().toString(36).substr(2, 9);
+export const generateId = () => Math.random().toString(36).substring(2, 11);
