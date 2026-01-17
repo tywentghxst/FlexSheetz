@@ -175,7 +175,7 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
 
       {renderFilterBar()}
 
-      <div className="grid gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {filteredEmployees.map(emp => {
           const sched = getDaySchedule(emp, selectedDay);
           const isDT = emp.driveTimeStores.includes(sched.storeId);
@@ -237,11 +237,11 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
   );
 
   const renderWeekView = () => (
-    <div className="overflow-x-auto rounded-[2.5rem] border border-white/5 shadow-2xl animate-in fade-in duration-500 bg-zinc-950/30">
-      <table className="w-full border-collapse min-w-[1000px]">
+    <div className="overflow-x-auto rounded-[2.5rem] border border-white/5 shadow-2xl animate-in fade-in duration-500 bg-zinc-950/30 w-full">
+      <table className="w-full border-collapse min-w-[1200px]">
         <thead>
           <tr className="bg-zinc-900/50">
-            <th className="p-4 text-left border-r border-white/5 text-[9px] uppercase tracking-widest text-zinc-500 font-black">SUPERVISOR</th>
+            <th className="p-4 text-left border-r border-white/5 text-[9px] uppercase tracking-widest text-zinc-500 font-black w-48">SUPERVISOR</th>
             {weekRange.map((date, i) => (
               <th key={i} className={`p-3 text-center border-r border-white/5 ${isSameDay(date, new Date()) ? 'bg-red-900/10' : ''}`}>
                 <div className="text-[7px] font-black text-zinc-600 mb-1">{DAYS_OF_WEEK[i]}</div>
@@ -270,20 +270,20 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                 return (
                   <td key={i} className="p-1" onClick={() => handleEditCell(emp, date)}>
                     <div 
-                      className={`h-24 rounded-xl flex flex-col items-center justify-center border transition-all relative ${isAuthenticated ? 'cursor-pointer active:scale-95' : 'cursor-default'}`} 
+                      className={`h-28 md:h-32 rounded-xl flex flex-col items-center justify-center border transition-all relative ${isAuthenticated ? 'cursor-pointer active:scale-95' : 'cursor-default'}`} 
                       style={{ 
                         backgroundColor: bgColor,
                         borderColor: `${bgColor}60`
                       }}
                     >
                       {/* Store Number / Status Code */}
-                      <div className={`text-lg font-black italic tracking-tighter ${useDarkText ? 'text-black' : 'text-white'}`}>
+                      <div className={`text-lg md:text-xl font-black italic tracking-tighter ${useDarkText ? 'text-black' : 'text-white'}`}>
                         {sched.status === DayStatus.WORK ? `#${storeNum}` : (sched.status === DayStatus.UNASSIGNED ? 'TBD' : sched.status.split(' ')[0])}
                       </div>
                       
                       {/* Times */}
                       {isWorking && sched.startTime && (
-                        <div className={`text-[8px] font-black uppercase tracking-tighter mt-1 ${useDarkText ? 'text-black/60' : 'text-white/60'}`}>
+                        <div className={`text-[8px] md:text-[9px] font-black uppercase tracking-tighter mt-1 text-center ${useDarkText ? 'text-black/60' : 'text-white/60'}`}>
                           {formatTo12h(sched.startTime)}
                           <br/>
                           {formatTo12h(displayEndTime)}
@@ -311,12 +311,10 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
 
   const currentEmp = editingCell ? state.employees.find(e => e.id === editingCell.empId) : null;
   const currentSched = editingCell && currentEmp ? getDaySchedule(currentEmp, editingCell.date) : null;
-  const isWorkingStatus = currentSched ? [DayStatus.WORK, DayStatus.UNASSIGNED, DayStatus.TRAINING, DayStatus.OFF].includes(currentSched.status) : false;
-  // Based on request: hours enabled for everything BUT: unpaid, PTO, call off, bereavement, leave of absence
   const isHoursEnabled = currentSched ? ![DayStatus.UNPAID, DayStatus.PTO, DayStatus.CALL_OFF, DayStatus.BEREAVEMENT, DayStatus.LEAVE_OF_ABSENCE].includes(currentSched.status) : false;
 
   return (
-    <div className="p-4 space-y-4 max-w-4xl mx-auto pb-32">
+    <div className="p-4 space-y-4 max-w-full md:max-w-none mx-auto pb-32">
       <div className="bg-zinc-950 p-6 rounded-[2.5rem] border border-white/5 flex items-center justify-between shadow-2xl relative">
         <div className="flex flex-col">
           <span className="text-[8px] font-black text-red-600 uppercase tracking-[0.2em] mb-1 leading-none">ACTIVE RANGE</span>
