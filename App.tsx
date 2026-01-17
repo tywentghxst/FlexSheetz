@@ -92,26 +92,21 @@ const App: React.FC = () => {
     }
   };
 
-  // Enhanced Notification Logic with Store Resolution
   useEffect(() => {
     if (!state.logs || state.logs.length === 0) return;
     
     const latestLog = state.logs[state.logs.length - 1];
     if (!latestLog || !latestLog.id) return;
     
-    // Prevent re-processing the same log entry
     if (latestLog.id === lastLogIdRef.current) return;
     lastLogIdRef.current = latestLog.id;
 
-    // Identify if the log belongs to a followed employee
     const targetEmployee = state.employees?.find(e => 
       e.name === latestLog.userName && subscribedIds.includes(e.id)
     );
 
     if (targetEmployee && (latestLog.action === 'OVERRIDE' || latestLog.action === 'REVERT')) {
       const title = `Staff Alert: ${targetEmployee.name}`;
-      
-      // Resolve store IDs to Store Numbers for readability
       let detailedValue = latestLog.newValue || 'Default';
       const isStoreField = latestLog.field === 'Store' || latestLog.field === 'Home Store' || latestLog.field === 'Store Assignment';
       
@@ -124,7 +119,6 @@ const App: React.FC = () => {
         ? `Reset to standard rotation schedule.` 
         : `${latestLog.field} updated to ${detailedValue}`;
 
-      // Trigger Browser API Notification
       if (window.Notification && Notification.permission === 'granted') {
         try {
           new Notification(title, { body });
@@ -133,7 +127,6 @@ const App: React.FC = () => {
         }
       }
 
-      // Add to local UI-based Alert Inbox
       setLocalNotifications(prev => [
         {
           id: latestLog.id,
@@ -256,23 +249,50 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex flex-col h-full w-full overflow-hidden ${currentThemeClass} transition-colors duration-300`}>
-      <header className="shrink-0 z-[110] shadow-xl relative" style={{ backgroundColor: COLORS.sheetzRed }}>
-        <div className="px-4 py-4 flex justify-between items-center">
+      {/* Redesigned Header - Edge-to-Edge, Squared, Logo Swapped Colors */}
+      <header className="shrink-0 z-[110] bg-zinc-950 border-b border-white/5">
+        <div className="p-4 sm:px-6 flex justify-between items-center w-full">
           <div className="flex flex-col">
-            <h1 className="font-black text-2xl tracking-tighter text-white uppercase italic leading-none">FLEX<span style={{ color: COLORS.sheetzGold }}>SHEETZ</span></h1>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex items-center gap-1.5"><span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">District</span><span className="text-lg font-black italic text-white leading-none tracking-tighter" style={{ color: COLORS.sheetzGold }}>{state.district}</span></div>
-              {isAuthenticated && <span className="bg-white/20 text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white/20 animate-pulse uppercase tracking-widest">ADMIN</span>}
+            <h1 className="font-black text-2xl sm:text-3xl tracking-tighter text-white uppercase italic leading-none">
+              <span style={{ color: COLORS.sheetzRed }}>FLEX</span>SHEETZ
+            </h1>
+            <div className="flex items-center gap-3 mt-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none">
+                  DISTRICT {state.district}
+                </span>
+                <div className={`w-1 h-1 rounded-full ${syncStatus === 'synced' ? 'bg-emerald-400' : syncStatus === 'syncing' ? 'bg-yellow-400 animate-pulse' : syncStatus === 'error' ? 'bg-red-400' : 'bg-white/10'}`} />
+              </div>
+              {isAuthenticated && (
+                <span className="bg-red-600/10 text-red-500 text-[7px] font-black px-1.5 py-0.5 rounded border border-red-500/20 uppercase tracking-widest leading-none">
+                  ADMIN
+                </span>
+              )}
             </div>
           </div>
+
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full mr-1 ${syncStatus === 'synced' ? 'bg-emerald-400' : syncStatus === 'syncing' ? 'bg-yellow-400 animate-pulse' : syncStatus === 'error' ? 'bg-red-400' : 'bg-white/20'}`} title={`Sync Status: ${syncStatus}`} />
-            {!isStandalone && <button onClick={handleInstallClick} className="bg-white/10 text-white p-2.5 rounded-xl border border-white/20 flex items-center gap-2 hover:bg-white/20 transition-all active:scale-95 shadow-lg group relative"><span className="text-xl">📲</span></button>}
-            <button onClick={() => { setShowNotifications(!showNotifications); setShowSettings(false); }} className={`p-2.5 rounded-xl transition-all relative ${showNotifications ? 'bg-white text-red-600 shadow-inner' : 'bg-white/10 text-white hover:bg-white/20'}`} aria-label="Notifications">
-                <span className="text-xl">🔔</span>
-                {localNotifications.length > 0 && <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-red-600 animate-bounce" />}
-            </button>
-            <button onClick={() => { setShowNotifications(false); if (isAuthenticated) setShowSettings(!showSettings); else setShowAuthModal(true); }} className={`p-2.5 rounded-xl transition-all ${showSettings ? 'bg-white text-red-600 shadow-inner' : 'bg-white/10 text-white hover:bg-white/20'}`} aria-label="Settings"><span className="text-xl">{isAuthenticated ? '⚙️' : '🔒'}</span></button>
+            {/* Actions Menu */}
+            <div className="flex bg-zinc-900 p-1 rounded-2xl border border-white/10">
+              {!isStandalone && (
+                <button onClick={handleInstallClick} className="p-2 text-white hover:bg-white/5 rounded-xl transition-all active:scale-90">
+                  <span className="text-base">📲</span>
+                </button>
+              )}
+              <button 
+                onClick={() => { setShowNotifications(!showNotifications); setShowSettings(false); }} 
+                className={`p-2 rounded-xl transition-all relative ${showNotifications ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'}`}
+              >
+                  <span className="text-base">🔔</span>
+                  {localNotifications.length > 0 && <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-yellow-400 rounded-full border border-zinc-900" />}
+              </button>
+              <button 
+                onClick={() => { setShowNotifications(false); if (isAuthenticated) setShowSettings(!showSettings); else setShowAuthModal(true); }} 
+                className={`p-2 rounded-xl transition-all ${showSettings ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'}`}
+              >
+                <span className="text-base">{isAuthenticated ? '⚙️' : '🔒'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
