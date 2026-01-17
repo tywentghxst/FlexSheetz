@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { AppState, Store, Employee, ShiftType, DayStatus, RotationDay, ChangeLog } from '../types';
 import { INITIAL_STORES, COLORS, SHIFT_DEFAULTS, DAYS_OF_WEEK } from '../constants';
-import { generateId, formatTo12h } from '../utils';
+import { generateId } from '../utils';
 
 interface SettingsProps {
   state: AppState;
@@ -22,10 +22,10 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
   const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null);
   const [activeRotationWeek, setActiveRotationWeek] = useState<'week1' | 'week2'>('week1');
 
-  const createUnscheduledRotation = (shift: ShiftType): { week1: Record<string, RotationDay>, week2: Record<string, RotationDay> } => ({
+  const createUnassignedRotation = (shift: ShiftType): { week1: Record<string, RotationDay>, week2: Record<string, RotationDay> } => ({
     week1: Array.from({ length: 7 }).reduce<Record<string, RotationDay>>((acc, _, i) => {
       acc[i.toString()] = { 
-        status: DayStatus.UNSCHEDULED, 
+        status: DayStatus.UNASSIGNED, 
         startTime: SHIFT_DEFAULTS[shift].start, 
         endTime: SHIFT_DEFAULTS[shift].end 
       };
@@ -33,7 +33,7 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
     }, {}),
     week2: Array.from({ length: 7 }).reduce<Record<string, RotationDay>>((acc, _, i) => {
       acc[i.toString()] = { 
-        status: DayStatus.UNSCHEDULED, 
+        status: DayStatus.UNASSIGNED, 
         startTime: SHIFT_DEFAULTS[shift].start, 
         endTime: SHIFT_DEFAULTS[shift].end 
       };
@@ -47,7 +47,7 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
     homeStoreId: state.stores[0]?.id || '',
     allowedStores: state.stores.map(s => s.id),
     driveTimeStores: [],
-    rotation: createUnscheduledRotation(ShiftType.FIRST)
+    rotation: createUnassignedRotation(ShiftType.FIRST)
   });
 
   const logChange = (action: string, field: string, oldVal: string, newVal: string, empName: string): ChangeLog => ({
@@ -115,7 +115,7 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
       homeStoreId: state.stores[0]?.id || '',
       allowedStores: state.stores.map(s => s.id),
       driveTimeStores: [],
-      rotation: createUnscheduledRotation(ShiftType.FIRST)
+      rotation: createUnassignedRotation(ShiftType.FIRST)
     });
     setEditingEmployeeId(null);
     setIsEditingEmployee(true);
@@ -351,7 +351,7 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
                     <div><label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-widest">Full Name</label><input className="w-full bg-zinc-800 rounded-xl p-4 border-none text-white font-bold" value={employeeFormData.name} onChange={e => setEmployeeFormData({...employeeFormData, name: e.target.value})} /></div>
                     <div><label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-widest">Home Store</label><select className="w-full bg-zinc-800 rounded-xl p-4 border-none text-white font-bold" value={employeeFormData.homeStoreId} onChange={e => setEmployeeFormData({...employeeFormData, homeStoreId: e.target.value})}>{state.stores.map(s => <option key={s.id} value={s.id}>#{s.number}</option>)}</select></div>
                   </div>
-                  <div><label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-widest">Standard Shift</label><select className="w-full bg-zinc-800 rounded-xl p-4 border-none text-white font-bold" value={employeeFormData.shift} onChange={e => { const shift = e.target.value as ShiftType; setEmployeeFormData({ ...employeeFormData, shift, rotation: createUnscheduledRotation(shift) }); }}>{Object.values(ShiftType).map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+                  <div><label className="block text-[10px] font-bold text-zinc-500 mb-1 uppercase tracking-widest">Standard Shift</label><select className="w-full bg-zinc-800 rounded-xl p-4 border-none text-white font-bold" value={employeeFormData.shift} onChange={e => { const shift = e.target.value as ShiftType; setEmployeeFormData({ ...employeeFormData, shift, rotation: createUnassignedRotation(shift) }); }}>{Object.values(ShiftType).map(s => <option key={s} value={s}>{s}</option>)}</select></div>
                   <div>
                     <label className="block text-[10px] font-bold text-zinc-500 mb-3 uppercase tracking-widest">Drive Time Authorization</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -372,7 +372,7 @@ const Settings: React.FC<SettingsProps> = ({ state, updateState, onRefresh, onLo
                        {DAYS_OF_WEEK.map((day, idx) => {
                          const rot = employeeFormData.rotation?.[activeRotationWeek][idx.toString()];
                          if (!rot) return null;
-                         const isWork = rot.status === DayStatus.WORK || rot.status === DayStatus.UNSCHEDULED;
+                         const isWork = rot.status === DayStatus.WORK || rot.status === DayStatus.UNASSIGNED;
                          return (
                            <div key={day} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-2xl border border-white/5">
                               <span className="w-10 text-[10px] font-black text-zinc-500">{day}</span>

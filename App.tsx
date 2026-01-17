@@ -249,8 +249,8 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex flex-col h-full w-full overflow-hidden ${currentThemeClass} transition-colors duration-300`}>
-      {/* Redesigned Header - Edge-to-Edge, Squared, Logo Swapped Colors */}
-      <header className="shrink-0 z-[110] bg-zinc-950 border-b border-white/5">
+      {/* Redesigned Header - Edge-to-Edge, Squared, Logo Swapped Colors, Modular Action Buttons */}
+      <header className="shrink-0 z-[110] bg-zinc-950 border-b border-white/5 shadow-2xl">
         <div className="p-4 sm:px-6 flex justify-between items-center w-full">
           <div className="flex flex-col">
             <h1 className="font-black text-2xl sm:text-3xl tracking-tighter text-white uppercase italic leading-none">
@@ -271,26 +271,38 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Actions Menu */}
-            <div className="flex bg-zinc-900 p-1 rounded-2xl border border-white/10">
-              {!isStandalone && (
-                <button onClick={handleInstallClick} className="p-2 text-white hover:bg-white/5 rounded-xl transition-all active:scale-90">
-                  <span className="text-base">📲</span>
+          <div className="flex items-center gap-2.5 sm:gap-4">
+            {/* Actions Grid - Individual boxes for each action */}
+            {!isStandalone && (
+              <div className="bg-zinc-900/50 p-0.5 rounded-xl border border-white/5 shadow-lg">
+                <button 
+                  onClick={handleInstallClick} 
+                  className="p-2.5 text-white hover:bg-white/5 rounded-lg transition-all active:scale-90 flex items-center justify-center"
+                  title="Install App"
+                >
+                  <span className="text-base sm:text-lg leading-none">📲</span>
                 </button>
-              )}
+              </div>
+            )}
+            
+            <div className={`p-0.5 rounded-xl border shadow-lg transition-all ${showNotifications ? 'bg-zinc-800 border-white/20' : 'bg-zinc-900/50 border-white/5'}`}>
               <button 
                 onClick={() => { setShowNotifications(!showNotifications); setShowSettings(false); }} 
-                className={`p-2 rounded-xl transition-all relative ${showNotifications ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'}`}
+                className={`p-2.5 rounded-lg transition-all relative flex items-center justify-center ${showNotifications ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+                title="Notifications"
               >
-                  <span className="text-base">🔔</span>
-                  {localNotifications.length > 0 && <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-yellow-400 rounded-full border border-zinc-900" />}
+                  <span className="text-base sm:text-lg leading-none">🔔</span>
+                  {localNotifications.length > 0 && <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-yellow-400 rounded-full border border-zinc-900 shadow-[0_0_8px_rgba(250,204,21,0.5)]" />}
               </button>
+            </div>
+
+            <div className={`p-0.5 rounded-xl border shadow-lg transition-all ${showSettings ? 'bg-zinc-800 border-white/20' : 'bg-zinc-900/50 border-white/5'}`}>
               <button 
                 onClick={() => { setShowNotifications(false); if (isAuthenticated) setShowSettings(!showSettings); else setShowAuthModal(true); }} 
-                className={`p-2 rounded-xl transition-all ${showSettings ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'}`}
+                className={`p-2.5 rounded-lg transition-all flex items-center justify-center ${showSettings ? 'text-white' : 'text-zinc-500 hover:text-white'}`}
+                title={isAuthenticated ? 'Settings' : 'Login'}
               >
-                <span className="text-base">{isAuthenticated ? '⚙️' : '🔒'}</span>
+                <span className="text-base sm:text-lg leading-none">{isAuthenticated ? '⚙️' : '🔒'}</span>
               </button>
             </div>
           </div>

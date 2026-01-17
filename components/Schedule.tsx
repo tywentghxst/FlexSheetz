@@ -74,7 +74,7 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
       employeeId: emp.id,
       date: dateId,
       storeId: emp.homeStoreId,
-      status: rotation?.status || DayStatus.UNSCHEDULED,
+      status: rotation?.status || DayStatus.UNASSIGNED,
       startTime: rotation?.startTime || '',
       endTime: rotation?.endTime || '',
       isManualOverride: false
@@ -89,12 +89,12 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
   const getStatusColor = (status: DayStatus) => {
     switch (status) {
       case DayStatus.WORK: return MUSTARD_YELLOW;
+      case DayStatus.UNASSIGNED: return COLORS.emerald;
       case DayStatus.TRAINING: return COLORS.blue;
       case DayStatus.OFF: return '#27272a';
       case DayStatus.PTO: return COLORS.purple;
       case DayStatus.UNPAID: return COLORS.orange;
       case DayStatus.CALL_OFF: return COLORS.sheetzRed;
-      case DayStatus.UNSCHEDULED: return COLORS.emerald;
       case DayStatus.LEAVE_OF_ABSENCE: return '#6B7280';
       case DayStatus.BEREAVEMENT: return '#4338CA';
       default: return '#18181b';
@@ -118,7 +118,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
         const isActive = statusFilter === status;
         let displayLabel = status === 'ALL' ? 'ALL' : status;
         if (status === DayStatus.WORK) displayLabel = 'ASSIGNED';
-        if (status === DayStatus.UNSCHEDULED) displayLabel = 'UNASSIGNED';
 
         return (
           <button
@@ -139,7 +138,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
 
   const renderDayView = () => (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Date Navigation Bar - Moved here to be below the sticky week selection */}
       <div className="bg-zinc-950/40 p-1.5 rounded-[2rem] flex items-center justify-between gap-1 shadow-inner border border-white/5">
         {weekRange.map((date, i) => {
           const isSelected = isSameDay(date, selectedDay);
@@ -172,7 +170,7 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
           const bgColor = getStatusColor(sched.status);
           const displayEndTime = isDT ? applyDriveTime(sched.endTime) : sched.endTime;
 
-          const useDarkText = sched.status === DayStatus.WORK || sched.status === DayStatus.UNSCHEDULED || sched.status === DayStatus.UNPAID || sched.status === DayStatus.TRAINING;
+          const useDarkText = sched.status === DayStatus.WORK || sched.status === DayStatus.UNASSIGNED || sched.status === DayStatus.UNPAID || sched.status === DayStatus.TRAINING;
           const textColorClass = useDarkText ? 'text-zinc-950' : 'text-white';
           const subTextColorClass = useDarkText ? 'text-zinc-900/60' : 'text-white/60';
 
@@ -192,7 +190,7 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                  <h4 className={`text-xl font-black italic tracking-tighter ${textColorClass}`}>
                   {emp.name}
                  </h4>
-                 {(sched.status === DayStatus.WORK || sched.status === DayStatus.UNSCHEDULED || sched.status === DayStatus.TRAINING) && sched.startTime && (
+                 {(sched.status === DayStatus.WORK || sched.status === DayStatus.UNASSIGNED || sched.status === DayStatus.TRAINING) && sched.startTime && (
                    <div className={`mt-1 text-[9px] font-black uppercase tracking-widest ${subTextColorClass}`}>
                      {formatTo12h(sched.startTime)} - {formatTo12h(displayEndTime)}
                    </div>
@@ -200,21 +198,21 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
               </div>
               <div className="text-right relative z-10">
                  <div className="flex items-center justify-end gap-1.5 mb-1">
-                    {isDT && sched.status === DayStatus.WORK && (
+                    {isDT && (sched.status === DayStatus.WORK || sched.status === DayStatus.UNASSIGNED) && (
                       <span className={`text-[6px] px-1 py-0.5 rounded font-black uppercase tracking-tighter border ${useDarkText ? 'bg-black/5 border-black/10 text-black' : 'bg-white/10 border-white/10 text-white'}`}>
                         {state.driveTimeLabel}
                       </span>
                     )}
                  </div>
-                 {sched.status === DayStatus.WORK ? (
+                 {sched.status === DayStatus.WORK || sched.status === DayStatus.UNASSIGNED ? (
                    <div>
                       <div className={`text-3xl font-black italic tracking-tighter leading-none mb-0.5 ${textColorClass}`}>
-                        #{storeNum}
+                        {sched.status === DayStatus.WORK ? `#${storeNum}` : 'TBD'}
                       </div>
                    </div>
                  ) : (
                    <div className={`text-xl font-black italic tracking-tighter uppercase ${textColorClass}`}>
-                      {sched.status === DayStatus.UNSCHEDULED ? 'UNASSIGNED' : sched.status}
+                      {sched.status}
                    </div>
                  )}
               </div>
@@ -227,7 +225,7 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
 
   const renderWeekView = () => (
     <div className="overflow-x-auto rounded-[2.5rem] border border-white/5 shadow-2xl animate-in fade-in duration-500 bg-zinc-950/30">
-      <table className="w-full border-collapse min-w-[800px]">
+      <table className="w-full border-collapse min-w-[1000px]">
         <thead>
           <tr className="bg-zinc-900/50">
             <th className="p-4 text-left border-r border-white/5 text-[9px] uppercase tracking-widest text-zinc-500 font-black">SUPERVISOR</th>
@@ -249,13 +247,44 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
               {weekRange.map((date, i) => {
                 const sched = getDaySchedule(emp, date);
                 const bgColor = getStatusColor(sched.status);
-                const isOOO = [DayStatus.OFF, DayStatus.PTO, DayStatus.CALL_OFF, DayStatus.UNPAID, DayStatus.LEAVE_OF_ABSENCE, DayStatus.BEREAVEMENT].includes(sched.status);
+                const isDT = (sched.status === DayStatus.WORK || sched.status === DayStatus.UNASSIGNED) && emp.driveTimeStores.includes(sched.storeId);
+                const displayEndTime = isDT ? applyDriveTime(sched.endTime) : sched.endTime;
+                
+                const isWorking = [DayStatus.WORK, DayStatus.UNASSIGNED, DayStatus.TRAINING].includes(sched.status);
+                const useDarkText = sched.status === DayStatus.WORK || sched.status === DayStatus.UNASSIGNED || sched.status === DayStatus.UNPAID || sched.status === DayStatus.TRAINING;
+                const storeNum = state.stores.find(s => s.id === sched.storeId)?.number || '---';
+
                 return (
                   <td key={i} className="p-1" onClick={() => handleEditCell(emp, date)}>
-                    <div className={`h-16 rounded-xl flex items-center justify-center border transition-all ${isAuthenticated ? 'cursor-pointer active:scale-90' : 'cursor-default'}`} style={{ backgroundColor: isOOO ? `${bgColor}20` : bgColor, borderColor: isOOO ? 'transparent' : `${bgColor}40` }}>
-                      <span className={`text-[9px] font-black italic ${isOOO ? 'text-zinc-600' : 'text-zinc-950'}`}>
-                        {sched.status === DayStatus.WORK ? `#${state.stores.find(s => s.id === sched.storeId)?.number}` : (sched.status === DayStatus.UNSCHEDULED ? 'TBD' : sched.status.split(' ')[0])}
-                      </span>
+                    <div 
+                      className={`h-24 rounded-xl flex flex-col items-center justify-center border transition-all relative ${isAuthenticated ? 'cursor-pointer active:scale-95' : 'cursor-default'}`} 
+                      style={{ 
+                        backgroundColor: bgColor,
+                        borderColor: `${bgColor}60`
+                      }}
+                    >
+                      {/* Store Number / Status Code */}
+                      <div className={`text-lg font-black italic tracking-tighter ${useDarkText ? 'text-black' : 'text-white'}`}>
+                        {sched.status === DayStatus.WORK ? `#${storeNum}` : (sched.status === DayStatus.UNASSIGNED ? 'TBD' : sched.status.split(' ')[0])}
+                      </div>
+                      
+                      {/* Times */}
+                      {isWorking && sched.startTime && (
+                        <div className={`text-[8px] font-black uppercase tracking-tighter mt-1 ${useDarkText ? 'text-black/60' : 'text-white/60'}`}>
+                          {formatTo12h(sched.startTime)}
+                          <br/>
+                          {formatTo12h(displayEndTime)}
+                        </div>
+                      )}
+
+                      {/* Drive Time Badge */}
+                      {isDT && (
+                        <div className="absolute top-1 right-1">
+                          <span className={`text-[6px] font-black px-1 rounded border ${useDarkText ? 'bg-black/10 border-black/10 text-black' : 'bg-white/10 border-white/10 text-white'}`}>
+                            {state.driveTimeLabel}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </td>
                 );
@@ -269,7 +298,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
 
   return (
     <div className="p-4 space-y-4 max-w-4xl mx-auto pb-32">
-      {/* Compact Header Card */}
       <div className="bg-zinc-950 p-6 rounded-[2.5rem] border border-white/5 flex items-center justify-between shadow-2xl relative">
         <div className="flex flex-col">
           <span className="text-[8px] font-black text-red-600 uppercase tracking-[0.2em] mb-1 leading-none">ACTIVE RANGE</span>
@@ -293,13 +321,13 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
           <div className="flex bg-zinc-900 p-1 rounded-2xl border border-white/10">
             <button 
               onClick={() => setViewMode('day')}
-              className={`p-2 rounded-xl transition-all ${viewMode === 'day' ? 'bg-zinc-800 text-white' : 'text-zinc-600'}`}
+              className={`p-2 rounded-xl transition-all ${viewMode === 'day' ? 'bg-zinc-800 text-white' : 'text-zinc-500'}`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
             </button>
             <button 
               onClick={() => setViewMode('week')}
-              className={`p-2 rounded-xl transition-all ${viewMode === 'week' ? 'bg-zinc-800 text-white' : 'text-zinc-600'}`}
+              className={`p-2 rounded-xl transition-all ${viewMode === 'week' ? 'bg-zinc-800 text-white' : 'text-zinc-500'}`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
             </button>
@@ -307,7 +335,6 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
         </div>
       </div>
 
-      {/* Sticky Scroll Controls - Weeks */}
       <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md pt-2 pb-3 -mx-4 px-4 flex gap-2 items-center overflow-hidden">
         <button 
           onClick={snapToToday} 
@@ -373,7 +400,7 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                         }}
                         className={`py-3.5 rounded-2xl text-[9px] font-black uppercase border transition-all ${isSelected ? 'bg-red-600 border-red-500 text-white' : 'bg-zinc-800/50 border-white/5 text-zinc-500'}`}
                        >
-                         {s === DayStatus.UNSCHEDULED ? 'UNASSIGNED' : s}
+                         {s}
                        </button>
                      );
                    })}
