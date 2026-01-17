@@ -86,6 +86,19 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
     setEditingCell({ empId: emp.id, date });
   };
 
+  const updateShiftOverride = (empId: string, date: Date, patch: Partial<ScheduleEntry>) => {
+    const dateId = formatDateId(date);
+    const emp = state.employees.find(e => e.id === empId)!;
+    const current = getDaySchedule(emp, date);
+    const next = { ...current, ...patch, isManualOverride: true };
+    
+    updateState(prev => ({
+      ...prev,
+      schedule: { ...prev.schedule, [`${empId}_${dateId}`]: next },
+      logs: [...(prev.logs || []), logChange('OVERRIDE', `Shift Update`, current.status, next.status, emp.name)].slice(-50)
+    }));
+  };
+
   const getStatusColor = (status: DayStatus) => {
     switch (status) {
       case DayStatus.WORK: return MUSTARD_YELLOW;
@@ -296,6 +309,12 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
     </div>
   );
 
+  const currentEmp = editingCell ? state.employees.find(e => e.id === editingCell.empId) : null;
+  const currentSched = editingCell && currentEmp ? getDaySchedule(currentEmp, editingCell.date) : null;
+  const isWorkingStatus = currentSched ? [DayStatus.WORK, DayStatus.UNASSIGNED, DayStatus.TRAINING, DayStatus.OFF].includes(currentSched.status) : false;
+  // Based on request: hours enabled for everything BUT: unpaid, PTO, call off, bereavement, leave of absence
+  const isHoursEnabled = currentSched ? ![DayStatus.UNPAID, DayStatus.PTO, DayStatus.CALL_OFF, DayStatus.BEREAVEMENT, DayStatus.LEAVE_OF_ABSENCE].includes(currentSched.status) : false;
+
   return (
     <div className="p-4 space-y-4 max-w-4xl mx-auto pb-32">
       <div className="bg-zinc-950 p-6 rounded-[2.5rem] border border-white/5 flex items-center justify-between shadow-2xl relative">
@@ -368,56 +387,99 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
 
       {viewMode === 'day' ? renderDayView() : renderWeekView()}
 
-      {editingCell && (
+      {editingCell && currentSched && currentEmp && (
         <div className="fixed inset-0 z-[200] bg-black/95 flex items-end sm:items-center justify-center backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-zinc-900 w-full max-w-lg rounded-t-[3rem] sm:rounded-[3rem] p-10 border-t border-white/10 shadow-4xl animate-in slide-in-from-bottom-20 duration-500 overflow-y-auto max-h-[90vh] pb-32 no-scrollbar">
             <header className="flex justify-between items-start mb-10">
               <div>
                 <h3 className="text-3xl font-black italic tracking-tighter text-white uppercase mb-1">Shift <span className="text-red-600">Edit</span></h3>
-                <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">{state.employees.find(e => e.id === editingCell.empId)?.name}</p>
+                <p className="text-[9px] text-zinc-500 uppercase font-black tracking-widest">{currentEmp.name}</p>
               </div>
               <button onClick={() => setEditingCell(null)} className="text-zinc-500 hover:text-white transition-colors p-2">✕</button>
             </header>
-            <div className="space-y-6">
+            
+            <div className="space-y-8">
+              {/* Status Selector */}
               <div className="space-y-3">
                 <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Status</label>
                 <div className="grid grid-cols-2 gap-2">
                    {Object.values(DayStatus).map(s => {
-                     const isSelected = getDaySchedule(state.employees.find(e => e.id === editingCell.empId)!, editingCell.date).status === s;
+                     const isSelected = currentSched.status === s;
                      return (
                        <button 
                         key={s}
-                        onClick={() => {
-                          const status = s;
-                          const dateId = formatDateId(editingCell.date);
-                          const emp = state.employees.find(e => e.id === editingCell.empId)!;
-                          const current = getDaySchedule(emp, editingCell.date);
-                          updateState(prev => ({ 
-                            ...prev, 
-                            schedule: { ...prev.schedule, [`${editingCell.empId}_${dateId}`]: { ...current, status, isManualOverride: true } }, 
-                            logs: [...(prev.logs || []), logChange('OVERRIDE', `Status`, current.status, status, emp.name)].slice(-50) 
-                          }));
-                        }}
+                        onClick={() => updateShiftOverride(currentEmp.id, editingCell.date, { status: s })}
                         className={`py-3.5 rounded-2xl text-[9px] font-black uppercase border transition-all ${isSelected ? 'bg-red-600 border-red-500 text-white' : 'bg-zinc-800/50 border-white/5 text-zinc-500'}`}
                        >
-                         {s}
+                         {s === DayStatus.WORK ? 'ASSIGNED' : s}
                        </button>
                      );
                    })}
                 </div>
               </div>
-              <div className="flex gap-4">
+
+              {/* Conditional Fields: Store & Times */}
+              {isHoursEnabled && (
+                <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-300">
+                  {/* Store Assignment - only if Assigned or Unassigned or Training */}
+                  {[DayStatus.WORK, DayStatus.UNASSIGNED, DayStatus.TRAINING].includes(currentSched.status) && (
+                    <div className="space-y-3">
+                      <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Store Assignment</label>
+                      <select 
+                        className="w-full bg-zinc-800 border-white/5 rounded-2xl p-4 text-sm font-black text-white focus:ring-2 focus:ring-red-600 outline-none"
+                        value={currentSched.storeId}
+                        onChange={(e) => updateShiftOverride(currentEmp.id, editingCell.date, { 
+                          storeId: e.target.value,
+                          status: DayStatus.WORK // Automatically switch to Work if a store is picked
+                        })}
+                      >
+                        <option value="">(TBD / Unassigned)</option>
+                        {state.stores.map(s => (
+                          <option key={s.id} value={s.id}>Store #{s.number} - {s.address}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Time Inputs */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Start Time</label>
+                      <input 
+                        type="time"
+                        className="w-full bg-zinc-800 border-white/5 rounded-2xl p-4 text-sm font-black text-white focus:ring-2 focus:ring-red-600 outline-none"
+                        value={currentSched.startTime}
+                        onChange={(e) => {
+                          const start = e.target.value;
+                          const end = calculateEndTime(start);
+                          updateShiftOverride(currentEmp.id, editingCell.date, { startTime: start, endTime: end });
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">End Time</label>
+                      <input 
+                        type="time"
+                        className="w-full bg-zinc-800 border-white/5 rounded-2xl p-4 text-sm font-black text-white focus:ring-2 focus:ring-red-600 outline-none"
+                        value={currentSched.endTime}
+                        onChange={(e) => updateShiftOverride(currentEmp.id, editingCell.date, { endTime: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-4 pt-4 border-t border-white/5">
                 <button onClick={() => {
                     const dateId = formatDateId(editingCell.date);
-                    const emp = state.employees.find(e => e.id === editingCell.empId)!;
                     updateState(prev => {
                       const next = { ...prev.schedule };
-                      delete next[`${editingCell.empId}_${dateId}`];
-                      return { ...prev, schedule: next, logs: [...(prev.logs || []), logChange('REVERT', `Rotation`, 'Custom', 'Default', emp.name)].slice(-50) };
+                      delete next[`${currentEmp.id}_${dateId}`];
+                      return { ...prev, schedule: next, logs: [...(prev.logs || []), logChange('REVERT', `Rotation`, 'Custom', 'Default', currentEmp.name)].slice(-50) };
                     });
                     setEditingCell(null);
-                  }} className="flex-1 bg-zinc-800 text-white font-black py-5 rounded-2xl text-[10px] uppercase">Reset</button>
-                <button onClick={() => setEditingCell(null)} className="flex-[2] bg-red-600 text-white font-black py-5 rounded-2xl text-[10px] uppercase shadow-xl">Close</button>
+                  }} className="flex-1 bg-zinc-800 text-white font-black py-5 rounded-2xl text-[10px] uppercase">Reset to Rotation</button>
+                <button onClick={() => setEditingCell(null)} className="flex-[2] bg-red-600 text-white font-black py-5 rounded-2xl text-[10px] uppercase shadow-xl">Save & Close</button>
               </div>
             </div>
           </div>
