@@ -31,14 +31,21 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
     const targetWeek = getWeekNumber(today);
     setCurrentWeekNum(targetWeek);
     setSelectedDay(today);
+    scrollToActiveWeek(targetWeek);
+  };
 
+  const scrollToActiveWeek = (week: number) => {
     setTimeout(() => {
-      const activeBtn = weekScrollRef.current?.querySelector(`[data-week="${targetWeek}"]`);
+      const activeBtn = weekScrollRef.current?.querySelector(`[data-week="${week}"]`);
       if (activeBtn) {
         activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
-    }, 50);
+    }, 100);
   };
+
+  useEffect(() => {
+    scrollToActiveWeek(currentWeekNum);
+  }, []);
 
   const weekParityLabel = (currentWeekNum % 2 === 0) ? '2' : '1';
 
@@ -111,6 +118,7 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
         const isActive = statusFilter === status;
         let displayLabel = status === 'ALL' ? 'ALL' : status;
         if (status === DayStatus.WORK) displayLabel = 'ASSIGNED';
+        if (status === DayStatus.UNSCHEDULED) displayLabel = 'UNASSIGNED';
 
         return (
           <button
@@ -131,8 +139,8 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
 
   const renderDayView = () => (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* ultra-compact Date Navigation Bar - Guaranteed 1 Line */}
-      <div className="bg-zinc-950/40 p-1.5 rounded-[2rem] flex items-center justify-between gap-1 shadow-inner">
+      {/* Date Navigation Bar - Moved here to be below the sticky week selection */}
+      <div className="bg-zinc-950/40 p-1.5 rounded-[2rem] flex items-center justify-between gap-1 shadow-inner border border-white/5">
         {weekRange.map((date, i) => {
           const isSelected = isSameDay(date, selectedDay);
           return (
@@ -184,6 +192,11 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                  <h4 className={`text-xl font-black italic tracking-tighter ${textColorClass}`}>
                   {emp.name}
                  </h4>
+                 {(sched.status === DayStatus.WORK || sched.status === DayStatus.UNSCHEDULED || sched.status === DayStatus.TRAINING) && sched.startTime && (
+                   <div className={`mt-1 text-[9px] font-black uppercase tracking-widest ${subTextColorClass}`}>
+                     {formatTo12h(sched.startTime)} - {formatTo12h(displayEndTime)}
+                   </div>
+                 )}
               </div>
               <div className="text-right relative z-10">
                  <div className="flex items-center justify-end gap-1.5 mb-1">
@@ -198,13 +211,10 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                       <div className={`text-3xl font-black italic tracking-tighter leading-none mb-0.5 ${textColorClass}`}>
                         #{storeNum}
                       </div>
-                      <div className={`text-[9px] font-black uppercase tracking-tighter ${subTextColorClass}`}>
-                        {formatTo12h(sched.startTime)} <span className="opacity-30">-</span> {formatTo12h(displayEndTime)}
-                      </div>
                    </div>
                  ) : (
                    <div className={`text-xl font-black italic tracking-tighter uppercase ${textColorClass}`}>
-                      {sched.status === DayStatus.UNSCHEDULED ? 'TBD' : sched.status}
+                      {sched.status === DayStatus.UNSCHEDULED ? 'UNASSIGNED' : sched.status}
                    </div>
                  )}
               </div>
@@ -275,13 +285,11 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Week Toggle */}
           <div className="bg-zinc-900 px-3 py-2 rounded-2xl border border-white/5 flex flex-col items-center justify-center min-w-[55px]">
             <span className="text-[6px] font-black text-red-600 uppercase tracking-widest leading-none mb-0.5">WEEK</span>
             <span className="text-lg font-black text-white italic leading-none">{weekParityLabel}</span>
           </div>
 
-          {/* View Toggles */}
           <div className="flex bg-zinc-900 p-1 rounded-2xl border border-white/10">
             <button 
               onClick={() => setViewMode('day')}
@@ -299,11 +307,36 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar py-1" ref={weekScrollRef}>
-        <button onClick={snapToToday} className="bg-white/5 text-zinc-500 px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest hover:text-white transition-all">TODAY</button>
-        {Array.from({ length: 52 }, (_, i) => i + 1).map(num => (
-          <button key={num} data-week={num} onClick={() => setCurrentWeekNum(num)} className={`px-4 py-2 rounded-xl text-[8px] font-black tracking-widest transition-all shrink-0 ${currentWeekNum === num ? 'bg-red-600 text-white' : 'bg-zinc-900/30 text-zinc-600'}`}>W{num}</button>
-        ))}
+      {/* Sticky Scroll Controls - Weeks */}
+      <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-md pt-2 pb-3 -mx-4 px-4 flex gap-2 items-center overflow-hidden">
+        <button 
+          onClick={snapToToday} 
+          className="shrink-0 bg-red-600 text-white px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-500 transition-all shadow-lg active:scale-95"
+        >
+          TODAY
+        </button>
+        <div className="flex-1 flex gap-2 overflow-x-auto no-scrollbar scroll-smooth" ref={weekScrollRef}>
+          {Array.from({ length: 52 }, (_, i) => i + 1).map(num => {
+            const isCurrent = currentWeekNum === num;
+            const isTodayWeek = getWeekNumber(new Date()) === num;
+            return (
+              <button 
+                key={num} 
+                data-week={num} 
+                onClick={() => setCurrentWeekNum(num)} 
+                className={`px-5 py-2.5 rounded-xl text-[9px] font-black tracking-widest transition-all shrink-0 border ${
+                  isCurrent 
+                    ? 'bg-white border-white text-black scale-105' 
+                    : isTodayWeek 
+                      ? 'bg-red-600/10 border-red-600/30 text-red-500' 
+                      : 'bg-zinc-900/30 border-white/5 text-zinc-600'
+                }`}
+              >
+                W{num}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {viewMode === 'day' ? renderDayView() : renderWeekView()}
@@ -340,7 +373,7 @@ const Schedule: React.FC<ScheduleProps> = ({ state, updateState, isAuthenticated
                         }}
                         className={`py-3.5 rounded-2xl text-[9px] font-black uppercase border transition-all ${isSelected ? 'bg-red-600 border-red-500 text-white' : 'bg-zinc-800/50 border-white/5 text-zinc-500'}`}
                        >
-                         {s}
+                         {s === DayStatus.UNSCHEDULED ? 'UNASSIGNED' : s}
                        </button>
                      );
                    })}
