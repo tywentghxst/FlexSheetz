@@ -13,6 +13,8 @@ import { format } from 'date-fns';
 const LOCAL_STORAGE_KEY = 'flexsheetz_local_state';
 const AUTH_KEY = 'flexsheetz_auth_session';
 const SUBSCRIPTIONS_KEY = 'flexsheetz_notifications_subs';
+const TUTORIAL_KEY = 'flexsheetz_tutorial_completed';
+const POLLING_INTERVAL = 3000;
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
@@ -40,6 +42,11 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [showTutorial, setShowTutorial] = useState(() => {
+    return !localStorage.getItem(TUTORIAL_KEY);
+  });
+  const [tutorialStep, setTutorialStep] = useState(0);
+
   const [localNotifications, setLocalNotifications] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('Schedule');
   const [showSettings, setShowSettings] = useState(false);
@@ -52,6 +59,15 @@ const App: React.FC = () => {
   const [lastSha, setLastSha] = useState<string | null>(null);
 
   const lastLogIdRef = useRef<string | null>(null);
+  
+  // Refs for sync logic to prevent stale closures and conflicts
+  const lastShaRef = useRef<string | null>(null);
+  const isPushingRef = useRef(false);
+
+  // Keep lastShaRef in sync with state
+  useEffect(() => {
+    lastShaRef.current = lastSha;
+  }, [lastSha]);
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
@@ -90,6 +106,11 @@ const App: React.FC = () => {
     } else {
       setShowInstallModal(true);
     }
+  };
+
+  const finishTutorial = () => {
+    localStorage.setItem(TUTORIAL_KEY, 'true');
+    setShowTutorial(false);
   };
 
   useEffect(() => {
@@ -173,44 +194,82 @@ const App: React.FC = () => {
     setShowSettings(false);
   };
 
+  // Robust pull with conditional fetching and push-guard
   const pullFromGitHub = useCallback(async (config: GitHubConfig) => {
     if (!config.token || !config.repo) return;
-    setSyncStatus('syncing');
+    if (isPushingRef.current) return; // Don't pull if we are in the middle of a push to avoid reverting optimistic updates
+
+    // Only set loading indicator if we don't have data yet to avoid flickering on poll
+    if (!lastShaRef.current) setSyncStatus('syncing');
+
     try {
       const url = `https://api.github.com/repos/${config.repo}/contents/${config.path}?ref=${config.branch}`;
-      const res = await fetch(url, { headers: { Authorization: `token ${config.token}` } });
+      const headers: HeadersInit = { Authorization: `token ${config.token}` };
+      
+      // Use ETag/SHA for conditional request to save bandwidth and redundant processing
+      if (lastShaRef.current) {
+        headers['If-None-Match'] = `"${lastShaRef.current}"`;
+      }
+
+      const res = await fetch(url, { headers });
+
+      if (res.status === 304) {
+        setSyncStatus('synced');
+        return;
+      }
+
       if (res.ok) {
         const data = await res.json();
+        
+        // Secondary check in case 304 wasn't returned but SHA matches
+        if (data.sha === lastShaRef.current) {
+            setSyncStatus('synced');
+            return;
+        }
+
         const content = JSON.parse(atob(data.content));
         setLastSha(data.sha);
-        setState(prev => ({ ...content, github: prev.github, logs: content.logs || [] }));
+        
+        setState(prev => ({ 
+            ...content, 
+            github: prev.github, // Preserve local credentials
+            logs: content.logs || [] 
+        }));
         setSyncStatus('synced');
       } else {
-        setSyncStatus('error');
+        // Silent failure on background poll is better than error flashing
+        if (!lastShaRef.current) setSyncStatus('error');
       }
     } catch (e) {
-      setSyncStatus('error');
+      if (!lastShaRef.current) setSyncStatus('error');
     }
   }, []);
 
   const pushToGitHub = useCallback(async (newState: AppState) => {
     const config = newState.github;
     if (!config?.token || !config?.repo) return;
+    
+    isPushingRef.current = true;
     setSyncStatus('syncing');
+
     try {
+      // 1. Get latest SHA to minimize conflicts (Optimistic Concurrency)
       const getUrl = `https://api.github.com/repos/${config.repo}/contents/${config.path}?ref=${config.branch}`;
       const getRes = await fetch(getUrl, { headers: { Authorization: `token ${config.token}` } });
-      let currentSha = lastSha;
+      
+      let currentSha = lastShaRef.current;
       if (getRes.ok) {
         const getData = await getRes.json();
         currentSha = getData.sha;
       }
+
       const body = { 
         message: `Cloud Sync: ${new Date().toISOString()}`, 
         content: btoa(JSON.stringify(newState, null, 2)), 
         branch: config.branch, 
         sha: currentSha || undefined 
       };
+
       const putRes = await fetch(`https://api.github.com/repos/${config.repo}/contents/${config.path}`, { 
         method: 'PUT', 
         headers: { 
@@ -219,6 +278,7 @@ const App: React.FC = () => {
         }, 
         body: JSON.stringify(body) 
       });
+
       if (putRes.ok) {
         const putData = await putRes.json();
         if (putData) setLastSha(putData.content.sha);
@@ -228,12 +288,25 @@ const App: React.FC = () => {
       }
     } catch (e) {
       setSyncStatus('error');
+    } finally {
+      isPushingRef.current = false;
     }
-  }, [lastSha]);
+  }, []);
 
+  // Setup Polling
   useEffect(() => {
-    if (state.github?.token && state.github?.repo) pullFromGitHub(state.github);
-  }, [pullFromGitHub, state.github?.repo, state.github?.token]);
+    if (state.github?.token && state.github?.repo) {
+        // Initial fetch
+        pullFromGitHub(state.github);
+
+        // Start polling
+        const intervalId = setInterval(() => {
+            pullFromGitHub(state.github!);
+        }, POLLING_INTERVAL);
+
+        return () => clearInterval(intervalId);
+    }
+  }, [state.github?.token, state.github?.repo, state.github?.branch, state.github?.path, pullFromGitHub]);
 
   const updateState = (updater: (prev: AppState) => AppState) => {
     if (!isAuthenticated) return;
@@ -246,6 +319,29 @@ const App: React.FC = () => {
   };
 
   const currentThemeClass = state.darkMode ? 'bg-black text-white' : 'bg-gray-50 text-gray-900';
+
+  const tutorialSlides = [
+    {
+      icon: '👋',
+      title: 'Welcome to FlexSheetz',
+      desc: 'Your ultimate digital command center for district scheduling and roster management.'
+    },
+    {
+      icon: '📅',
+      title: 'Smart Schedule',
+      desc: 'Tap any shift in the Day or Week view to make live adjustments, add drive time, or assign stores.'
+    },
+    {
+      icon: '🔔',
+      title: 'Real-Time Alerts',
+      desc: 'Go to the Team tab and subscribe to specific supervisors to get instant notifications when their schedule changes.'
+    },
+    {
+      icon: '⚡',
+      title: 'Live Sync',
+      desc: 'Data syncs automatically across all devices. Everyone stays on the same page, instantly.'
+    }
+  ];
 
   return (
     <div className={`flex flex-col h-full w-full overflow-hidden ${currentThemeClass} transition-colors duration-300`}>
@@ -430,6 +526,57 @@ const App: React.FC = () => {
                  Dismiss
                </button>
              </div>
+          </div>
+        </div>
+      )}
+
+      {showTutorial && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-zinc-900 rounded-[3rem] border border-white/10 shadow-4xl overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-500">
+            <button 
+              onClick={finishTutorial}
+              className="absolute top-6 right-6 text-zinc-500 hover:text-white font-black text-xs uppercase tracking-widest z-20"
+            >
+              Skip
+            </button>
+
+            <div className="p-10 pb-6 flex-1 flex flex-col items-center text-center">
+              <div key={tutorialStep} className="animate-in slide-in-from-right-8 fade-in duration-300 flex flex-col items-center">
+                <div className="w-24 h-24 bg-red-600/10 rounded-full flex items-center justify-center text-5xl mb-8 shadow-[0_0_30px_rgba(220,38,38,0.2)] border border-red-500/20">
+                  {tutorialSlides[tutorialStep].icon}
+                </div>
+                <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white mb-4">
+                  {tutorialSlides[tutorialStep].title}
+                </h2>
+                <p className="text-sm font-medium text-zinc-400 leading-relaxed mb-4">
+                  {tutorialSlides[tutorialStep].desc}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-8 pt-0">
+              <div className="flex justify-center gap-2 mb-8">
+                {tutorialSlides.map((_, i) => (
+                  <div 
+                    key={i} 
+                    className={`h-1.5 rounded-full transition-all duration-300 ${i === tutorialStep ? 'w-8 bg-red-600' : 'w-2 bg-zinc-800'}`}
+                  />
+                ))}
+              </div>
+
+              <button 
+                onClick={() => {
+                  if (tutorialStep < tutorialSlides.length - 1) {
+                    setTutorialStep(prev => prev + 1);
+                  } else {
+                    finishTutorial();
+                  }
+                }}
+                className="w-full bg-white text-black font-black py-5 rounded-3xl shadow-xl text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all hover:bg-zinc-200"
+              >
+                {tutorialStep < tutorialSlides.length - 1 ? 'Next' : 'Get Started'}
+              </button>
+            </div>
           </div>
         </div>
       )}
